@@ -1,0 +1,27 @@
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import { GoogleOAuthProvider } from "@react-oauth/google";
+import { BrowserRouter } from "react-router-dom";
+import App from "./App";
+import { AuthProvider } from "./context/AuthContext";
+import { ConsultationCallProvider } from "./context/ConsultationCallContext";
+import { SessionProvider } from "./context/SessionContext";
+import "./index.css";
+
+const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID ?? "";
+
+createRoot(document.getElementById("root")!).render(
+  <StrictMode>
+    <GoogleOAuthProvider clientId={googleClientId}>
+      <BrowserRouter>
+        <AuthProvider>
+          <SessionProvider>
+            <ConsultationCallProvider>
+              <App />
+            </ConsultationCallProvider>
+          </SessionProvider>
+        </AuthProvider>
+      </BrowserRouter>
+    </GoogleOAuthProvider>
+  </StrictMode>,
+);

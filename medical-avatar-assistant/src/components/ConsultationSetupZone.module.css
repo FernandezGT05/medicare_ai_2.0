@@ -1,0 +1,57 @@
+.zone {
+  width: 100%;
+  min-height: 0;
+}
+
+.conversation {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  width: 100%;
+  overflow-anchor: none;
+}
+
+.sessionRow {
+  display: grid;
+  grid-template-columns: 1fr minmax(280px, 340px);
+  align-items: stretch;
+  gap: 1.25rem;
+  width: 100%;
+  height: min(68vh, 680px);
+  min-height: 420px;
+  max-height: min(68vh, 680px);
+}
+
+.sessionRow > * {
+  min-height: 0;
+  max-height: 100%;
+  overflow: hidden;
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.tools {
+  min-width: 0;
+}
+
+@media (max-width: 960px) {
+  .sessionRow {
+    grid-template-columns: 1fr;
+  }
+
+  .sessionRow {
+    height: auto;
+    min-height: 420px;
+    max-height: none;
+  }
+
+  .sessionRow > :last-child {
+    min-height: 320px;
+    max-height: min(50vh, 480px);
+  }
+}

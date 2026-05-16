@@ -1,0 +1,197 @@
+.card {
+  padding: 1rem;
+  border-radius: 12px;
+  border: 1px solid var(--color-border, #d8e4e8);
+  background: #f8fbfc;
+}
+
+.title {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.desc {
+  margin: 0 0 0.75rem;
+  font-size: 0.82rem;
+  color: var(--color-text-muted, #5a6b73);
+  line-height: 1.45;
+}
+
+.area {
+  margin: 0 0 0.75rem;
+  padding: 0.5rem 0.65rem;
+  border-radius: 8px;
+  background: #eef6f8;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: var(--color-text, #1a2e35);
+}
+
+.message {
+  margin: 0 0 0.75rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 8px;
+  background: #fff8e6;
+  border: 1px solid #f0d78c;
+  font-size: 0.82rem;
+  color: #5a4a20;
+}
+
+.profileLink {
+  color: var(--color-primary, #0d7a6f);
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.prompt {
+  margin-bottom: 0.75rem;
+  padding: 0.75rem;
+  border-radius: 8px;
+  background: #e8f4f2;
+  border: 1px solid #b8e0da;
+}
+
+.promptText {
+  margin: 0 0 0.5rem;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.btnYes {
+  padding: 0.5rem 0.85rem;
+  border: none;
+  border-radius: 8px;
+  background: var(--color-primary, #0d7a6f);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btnYes:disabled {
+  opacity: 0.6;
+}
+
+.intentRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+}
+
+.intentChip {
+  padding: 0.35rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-border, #d8e4e8);
+  background: #fff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--color-text, #1a2e35);
+}
+
+.intentChip:hover {
+  border-color: var(--color-primary, #0d7a6f);
+}
+
+.intentChipActive {
+  background: #e8f4f2;
+  border-color: var(--color-primary, #0d7a6f);
+  color: var(--color-primary, #0d7a6f);
+}
+
+.intentChip:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.loading {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--color-text-muted, #5a6b73);
+}
+
+.placeList {
+  list-style: none;
+  margin: 0 0 0.5rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.placeItem {
+  padding: 0.75rem;
+  border-radius: 8px;
+  background: #fff;
+  border: 1px solid var(--color-border, #e8f0f2);
+}
+
+.placeHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  align-items: flex-start;
+  margin-bottom: 0.25rem;
+}
+
+.placeName {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.distance {
+  font-size: 0.75rem;
+  color: var(--color-primary, #0d7a6f);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.placeAddress {
+  margin: 0 0 0.35rem;
+  font-size: 0.78rem;
+  color: var(--color-text-muted, #5a6b73);
+}
+
+.placeReason {
+  margin: 0 0 0.35rem;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.mapsLink {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-primary, #0d7a6f);
+}
+
+.clearBtn,
+.btnSecondary {
+  padding: 0.4rem 0.65rem;
+  border: none;
+  background: none;
+  color: var(--color-text-muted, #5a6b73);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.btnSecondary {
+  margin-top: 0.35rem;
+  text-decoration: none;
+  border: 1px solid var(--color-border, #d8e4e8);
+  border-radius: 8px;
+  background: #fff;
+  padding: 0.45rem 0.75rem;
+}
+
+.hint {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--color-text-muted, #5a6b73);
+  line-height: 1.45;
+}

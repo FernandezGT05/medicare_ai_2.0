@@ -1,0 +1,229 @@
+.empty {
+  color: var(--color-text-muted, #5a6b73);
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+.latest {
+  margin-bottom: 2rem;
+  padding: 1.75rem 1.5rem;
+  border-radius: 16px;
+  border: 2px solid var(--color-primary, #0d7a6f);
+  background: linear-gradient(165deg, #f0faf8 0%, #fff 55%);
+  box-shadow: 0 8px 28px rgba(13, 122, 111, 0.1);
+}
+
+.latestBadge {
+  display: inline-block;
+  margin: 0 0 0.75rem;
+  padding: 0.3rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: var(--color-primary, #0d7a6f);
+  color: #fff;
+}
+
+.latestTitle {
+  margin: 0 0 0.5rem;
+  font-family: var(--font-display);
+  font-size: clamp(1.35rem, 3vw, 1.75rem);
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--color-text, #1a2e35);
+}
+
+.latestMeta {
+  margin: 0 0 1.25rem;
+  font-size: 0.88rem;
+  color: var(--color-text-muted, #5a6b73);
+}
+
+.latestMeta strong {
+  color: var(--color-primary, #0d7a6f);
+  font-weight: 600;
+}
+
+.stepsHeading {
+  margin: 0 0 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-text-muted, #5a6b73);
+}
+
+.noSteps {
+  margin: 0 0 1.25rem;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: var(--color-text-muted, #5a6b73);
+}
+
+.stepsList {
+  margin: 0 0 1.25rem;
+  padding-left: 1.35rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.stepItem {
+  font-size: 1.05rem;
+  line-height: 1.55;
+  color: var(--color-text, #1a2e35);
+}
+
+.latestActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.btnPrimary {
+  padding: 0.6rem 1.1rem;
+  border: none;
+  border-radius: 8px;
+  background: var(--color-primary, #0d7a6f);
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btnPrimary:hover {
+  filter: brightness(1.05);
+}
+
+.btnSecondary {
+  padding: 0.6rem 1.1rem;
+  border: 1px solid var(--color-border, #d8e4e8);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--color-text, #1a2e35);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btnSecondary:hover {
+  background: #f4f8f9;
+}
+
+.historySection {
+  border-top: 1px solid var(--color-border, #e8f0f2);
+  padding-top: 0.5rem;
+}
+
+.historyToggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.85rem 0.25rem;
+  border: none;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+}
+
+.historyToggle:hover {
+  color: var(--color-primary, #0d7a6f);
+}
+
+.historyToggleLabel {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-text, #1a2e35);
+}
+
+.historyToggleHint {
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--color-text-muted, #5a6b73);
+}
+
+.chevron {
+  flex-shrink: 0;
+  font-size: 0.85rem;
+  color: var(--color-text-muted, #5a6b73);
+  transition: transform 0.2s ease;
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
+.historyList {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.historyCard {
+  padding: 0.85rem 1rem;
+  border-radius: 10px;
+  border: 1px solid var(--color-border, #d8e4e8);
+  background: #fff;
+}
+
+.historyCardMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.75rem;
+  margin-bottom: 0.35rem;
+  font-size: 0.78rem;
+  color: var(--color-text-muted, #5a6b73);
+}
+
+.historyDate {
+  font-weight: 600;
+}
+
+.historySpecialty {
+  color: var(--color-primary, #0d7a6f);
+}
+
+.historyPreview {
+  margin: 0 0 0.5rem;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--color-text, #3d4f56);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.historySteps {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.82rem;
+  color: var(--color-text-muted, #5a6b73);
+}
+
+.historySteps li {
+  margin-bottom: 0.2rem;
+}
+
+.linkBtn {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-primary, #0d7a6f);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.linkBtn:hover {
+  filter: brightness(0.9);
+}

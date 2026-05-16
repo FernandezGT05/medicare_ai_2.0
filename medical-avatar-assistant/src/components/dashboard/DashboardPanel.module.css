@@ -1,0 +1,60 @@
+.panel {
+  flex: 1;
+  min-width: 0;
+  padding: 1.5rem 1.25rem 2rem;
+}
+
+.panelHeader {
+  margin-bottom: 1.5rem;
+}
+
+.panelTitle {
+  margin: 0 0 0.35rem;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-text, #1a2e35);
+}
+
+.panelSubhead {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--color-text-muted, #5a6b73);
+  line-height: 1.5;
+}
+
+.placeholder {
+  padding: 2.5rem 1.5rem;
+  border-radius: 12px;
+  border: 1px dashed var(--color-border, #c5d5da);
+  background: #fafcfd;
+  text-align: center;
+}
+
+.placeholderIcon {
+  font-size: 2rem;
+  margin-bottom: 0.75rem;
+}
+
+.placeholderTitle {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.placeholderText {
+  margin: 0 auto;
+  max-width: 28rem;
+  font-size: 0.9rem;
+  color: var(--color-text-muted, #5a6b73);
+  line-height: 1.55;
+}
+
+.placeholderList {
+  margin: 1rem auto 0;
+  padding-left: 1.2rem;
+  max-width: 24rem;
+  text-align: left;
+  font-size: 0.9rem;
+  color: var(--color-text-muted, #5a6b73);
+}
