@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes } from "react-router-dom";
+import { Analytics } from "@vercel/analytics/react";
 import { ScrollToTopButton } from "./components/ScrollToTopButton";
 import { ScrollToTopOnNavigate } from "./components/ScrollToTopOnNavigate";
 import { ConsultationPage } from "./pages/ConsultationPage";
@@ -21,6 +22,7 @@ export default function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <ScrollToTopButton />
+      <Analytics />
     </>
   );
 }
