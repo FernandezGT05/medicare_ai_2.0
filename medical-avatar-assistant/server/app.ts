@@ -1,7 +1,6 @@
 import cors from "cors";
 import express, { type Express } from "express";
 import { getConfig } from "./config.js";
-import { getDb } from "./db/db.js";
 import { runMigrations } from "./db/migrate.js";
 import { apiRouter } from "./routes/api.js";
 import { authRouter } from "./routes/auth.js";
@@ -17,10 +16,9 @@ import { webhooksRouter } from "./routes/webhooks.js";
 
 let dbReady = false;
 
-export function initServer(): void {
+export async function initServer(): Promise<void> {
   if (dbReady) return;
-  getDb();
-  runMigrations();
+  await runMigrations();
   dbReady = true;
 }
 
@@ -40,7 +38,6 @@ function buildCorsOrigins(): Set<string> {
 }
 
 export function createApp(): Express {
-  initServer();
   const app = express();
   const corsOrigins = buildCorsOrigins();
 

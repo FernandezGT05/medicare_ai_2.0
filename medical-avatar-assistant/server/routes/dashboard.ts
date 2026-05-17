@@ -19,9 +19,9 @@ export const dashboardRouter = Router();
 
 dashboardRouter.use(requireAuth);
 
-dashboardRouter.get("/", (req, res) => {
+dashboardRouter.get("/", async (req, res) => {
   const { user } = req as AuthenticatedRequest;
-  const items = listHistoryForUser(user.id);
+  const items = await listHistoryForUser(user.id);
   res.json({
     stats: buildDashboardStats(items),
     history: mapCompletedVisits(items),

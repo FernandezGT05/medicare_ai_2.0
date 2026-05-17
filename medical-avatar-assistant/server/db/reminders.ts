@@ -1,5 +1,5 @@
 import { randomUUID } from "crypto";
-import { getDb } from "./db.js";
+import { execute, query, queryOne } from "./db.js";
 import type { DbReminder } from "./types.js";
 
 export type ReminderKind = "appointment" | "medication" | "follow_up" | "custom";
@@ -21,63 +21,63 @@ function mapRow(row: Record<string, unknown>): DbReminder {
   };
 }
 
-export function listRemindersForUser(userId: string): DbReminder[] {
-  const db = getDb();
-  const rows = db
-    .prepare(
-      `SELECT * FROM reminders
-       WHERE user_id = ?
-       ORDER BY completed_at IS NOT NULL, due_at ASC`,
-    )
-    .all(userId) as Record<string, unknown>[];
+export async function listRemindersForUser(userId: string): Promise<DbReminder[]> {
+  const rows = await query<Record<string, unknown>>(
+    `SELECT * FROM reminders
+     WHERE user_id = $1
+     ORDER BY (completed_at IS NOT NULL), due_at ASC`,
+    [userId],
+  );
   return rows.map(mapRow);
 }
 
-export function createReminder(input: {
+export async function createReminder(input: {
   userId: string;
   kind: ReminderKind;
   title: string;
   notes?: string | null;
   dueAt: Date;
   consultationId?: string | null;
-}): DbReminder {
-  const db = getDb();
+}): Promise<DbReminder> {
   const id = randomUUID();
   const now = new Date().toISOString();
-  db.prepare(
+  await execute(
     `INSERT INTO reminders (id, user_id, kind, title, notes, due_at, consultation_id, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-  ).run(
-    id,
-    input.userId,
-    input.kind,
-    input.title.trim(),
-    input.notes?.trim() || null,
-    input.dueAt.toISOString(),
-    input.consultationId ?? null,
-    now,
-    now,
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+    [
+      id,
+      input.userId,
+      input.kind,
+      input.title.trim(),
+      input.notes?.trim() || null,
+      input.dueAt.toISOString(),
+      input.consultationId ?? null,
+      now,
+      now,
+    ],
   );
-  return mapRow(
-    db.prepare(`SELECT * FROM reminders WHERE id = ?`).get(id) as Record<
-      string,
-      unknown
-    >,
+  const row = await queryOne<Record<string, unknown>>(
+    `SELECT * FROM reminders WHERE id = $1`,
+    [id],
   );
+  if (!row) {
+    throw new Error("Failed to create reminder.");
+  }
+  return mapRow(row);
 }
 
-export function findReminderForUser(
+export async function findReminderForUser(
   id: string,
   userId: string,
-): DbReminder | null {
-  const db = getDb();
-  const row = db
-    .prepare(`SELECT * FROM reminders WHERE id = ? AND user_id = ?`)
-    .get(id, userId) as Record<string, unknown> | undefined;
+): Promise<DbReminder | null> {
+  const row = await queryOne<Record<string, unknown>>(
+    `SELECT * FROM reminders WHERE id = $1 AND user_id = $2`,
+    [id, userId],
+  );
   return row ? mapRow(row) : null;
 }
 
-export function updateReminder(
+export async function updateReminder(
   id: string,
   userId: string,
   input: {
@@ -87,8 +87,8 @@ export function updateReminder(
     dueAt?: Date;
     completed?: boolean;
   },
-): DbReminder | null {
-  const existing = findReminderForUser(id, userId);
+): Promise<DbReminder | null> {
+  const existing = await findReminderForUser(id, userId);
   if (!existing) return null;
 
   const completedAt =
@@ -98,35 +98,38 @@ export function updateReminder(
         ? null
         : (existing.completed_at?.toISOString() ?? null);
 
-  const db = getDb();
-  db.prepare(
+  await execute(
     `UPDATE reminders SET
-       kind = ?,
-       title = ?,
-       notes = ?,
-       due_at = ?,
-       completed_at = ?,
-       updated_at = datetime('now')
-     WHERE id = ? AND user_id = ?`,
-  ).run(
-    input.kind ?? existing.kind,
-    input.title?.trim() ?? existing.title,
-    input.notes !== undefined ? input.notes?.trim() || null : existing.notes,
-    (input.dueAt ?? existing.due_at).toISOString(),
-    completedAt,
-    id,
-    userId,
+       kind = $1,
+       title = $2,
+       notes = $3,
+       due_at = $4,
+       completed_at = $5,
+       updated_at = NOW()
+     WHERE id = $6 AND user_id = $7`,
+    [
+      input.kind ?? existing.kind,
+      input.title?.trim() ?? existing.title,
+      input.notes !== undefined ? input.notes?.trim() || null : existing.notes,
+      (input.dueAt ?? existing.due_at).toISOString(),
+      completedAt,
+      id,
+      userId,
+    ],
   );
 
   return findReminderForUser(id, userId);
 }
 
-export function deleteReminderForUser(id: string, userId: string): boolean {
-  const db = getDb();
-  const result = db
-    .prepare(`DELETE FROM reminders WHERE id = ? AND user_id = ?`)
-    .run(id, userId);
-  return result.changes > 0;
+export async function deleteReminderForUser(
+  id: string,
+  userId: string,
+): Promise<boolean> {
+  const changes = await execute(
+    `DELETE FROM reminders WHERE id = $1 AND user_id = $2`,
+    [id, userId],
+  );
+  return changes > 0;
 }
 
 export function reminderToJson(r: DbReminder) {

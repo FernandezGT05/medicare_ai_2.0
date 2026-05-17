@@ -1,22 +1,23 @@
-import { parseSqliteUtc } from "./datetime.js";
+import { parseDbUtc } from "./datetime.js";
 import type { DbConsultation, DbConsultationSummary, DbUser } from "./types.js";
 
 type UserRow = Omit<DbUser, "created_at" | "updated_at"> & {
-  created_at: string;
-  updated_at: string;
+  created_at: string | Date;
+  updated_at: string | Date;
+  onboarding_completed_at?: string | Date | null;
 };
 
 type ConsultationRow = Omit<
   DbConsultation,
   "started_at" | "ended_at" | "created_at"
 > & {
-  started_at: string;
-  ended_at: string | null;
-  created_at: string;
+  started_at: string | Date;
+  ended_at: string | Date | null;
+  created_at: string | Date;
 };
 
 type SummaryRow = Omit<DbConsultationSummary, "created_at" | "topics" | "advice_given"> & {
-  created_at: string;
+  created_at: string | Date;
   topics: string;
   advice_given: string;
 };
@@ -53,21 +54,21 @@ export function mapUserRow(row: UserRow): DbUser {
     location_country: row.location_country ?? null,
     location_postal: row.location_postal ?? null,
     location_label: row.location_label ?? null,
-    location_use_precise: Boolean(row.location_use_precise ?? 1),
+    location_use_precise: Boolean(row.location_use_precise ?? true),
     onboarding_completed_at: row.onboarding_completed_at
-      ? parseSqliteUtc(row.onboarding_completed_at)
+      ? parseDbUtc(row.onboarding_completed_at)
       : null,
-    created_at: new Date(row.created_at),
-    updated_at: new Date(row.updated_at),
+    created_at: parseDbUtc(row.created_at),
+    updated_at: parseDbUtc(row.updated_at),
   };
 }
 
 export function mapConsultationRow(row: ConsultationRow): DbConsultation {
   return {
     ...row,
-    started_at: parseSqliteUtc(row.started_at),
-    ended_at: row.ended_at ? parseSqliteUtc(row.ended_at) : null,
-    created_at: parseSqliteUtc(row.created_at),
+    started_at: parseDbUtc(row.started_at),
+    ended_at: row.ended_at ? parseDbUtc(row.ended_at) : null,
+    created_at: parseDbUtc(row.created_at),
   };
 }
 

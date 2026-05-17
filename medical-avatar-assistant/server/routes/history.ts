@@ -17,9 +17,9 @@ export const historyRouter = Router();
 
 historyRouter.use(requireAuth);
 
-historyRouter.get("/", (req, res) => {
+historyRouter.get("/", async (req, res) => {
   const { user } = req as AuthenticatedRequest;
-  const items = listHistoryForUser(user.id);
+  const items = await listHistoryForUser(user.id);
   res.json({
     history: mapCompletedVisits(items),
     pending: mapPendingVisits(items),

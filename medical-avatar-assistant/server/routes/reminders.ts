@@ -20,13 +20,13 @@ export const remindersRouter = Router();
 
 remindersRouter.use(requireAuth);
 
-remindersRouter.get("/", (req, res) => {
+remindersRouter.get("/", async (req, res) => {
   const { user } = req as AuthenticatedRequest;
-  const reminders = listRemindersForUser(user.id).map(reminderToJson);
+  const reminders = (await listRemindersForUser(user.id)).map(reminderToJson);
   res.json({ reminders });
 });
 
-remindersRouter.post("/", (req, res) => {
+remindersRouter.post("/", async (req, res) => {
   const { user } = req as AuthenticatedRequest;
   const body = req.body ?? {};
   const kind = typeof body.kind === "string" ? body.kind.trim() : "";
@@ -57,7 +57,7 @@ remindersRouter.post("/", (req, res) => {
   const consultationId =
     typeof body.consultationId === "string" ? body.consultationId.trim() : null;
 
-  const created = createReminder({
+  const created = await createReminder({
     userId: user.id,
     kind: kind as ReminderKind,
     title,
@@ -69,7 +69,7 @@ remindersRouter.post("/", (req, res) => {
   res.status(201).json({ reminder: reminderToJson(created) });
 });
 
-remindersRouter.patch("/:id", (req, res) => {
+remindersRouter.patch("/:id", async (req, res) => {
   const { user } = req as AuthenticatedRequest;
   const body = req.body ?? {};
 
@@ -109,7 +109,7 @@ remindersRouter.patch("/:id", (req, res) => {
     input.completed = body.completed;
   }
 
-  const updated = updateReminder(req.params.id, user.id, input);
+  const updated = await updateReminder(req.params.id, user.id, input);
   if (!updated) {
     res.status(404).json({ error: "Reminder not found." });
     return;
@@ -117,9 +117,9 @@ remindersRouter.patch("/:id", (req, res) => {
   res.json({ reminder: reminderToJson(updated) });
 });
 
-remindersRouter.delete("/:id", (req, res) => {
+remindersRouter.delete("/:id", async (req, res) => {
   const { user } = req as AuthenticatedRequest;
-  const deleted = deleteReminderForUser(req.params.id, user.id);
+  const deleted = await deleteReminderForUser(req.params.id, user.id);
   if (!deleted) {
     res.status(404).json({ error: "Reminder not found." });
     return;

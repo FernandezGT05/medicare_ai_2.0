@@ -147,7 +147,7 @@ export async function suggestPlacesForUser(
   }));
 
   if (input.consultationId && mapped.length > 0) {
-    const saved = insertPlaceSuggestions(
+    const saved = await insertPlaceSuggestions(
       input.consultationId,
       input.user.id,
       mapped,

@@ -1,5 +1,5 @@
 import { randomUUID } from "crypto";
-import { getDb } from "./db.js";
+import { execute, query, queryOne } from "./db.js";
 import type { DbHealthLogEntry } from "./types.js";
 
 export type HealthLogKind = "medication" | "vital" | "symptom" | "note";
@@ -19,19 +19,19 @@ function mapRow(row: Record<string, unknown>): DbHealthLogEntry {
   };
 }
 
-export function listHealthLogForUser(userId: string): DbHealthLogEntry[] {
-  const db = getDb();
-  const rows = db
-    .prepare(
-      `SELECT * FROM health_log_entries
-       WHERE user_id = ?
-       ORDER BY recorded_at DESC, created_at DESC`,
-    )
-    .all(userId) as Record<string, unknown>[];
+export async function listHealthLogForUser(
+  userId: string,
+): Promise<DbHealthLogEntry[]> {
+  const rows = await query<Record<string, unknown>>(
+    `SELECT * FROM health_log_entries
+     WHERE user_id = $1
+     ORDER BY recorded_at DESC, created_at DESC`,
+    [userId],
+  );
   return rows.map(mapRow);
 }
 
-export function createHealthLogEntry(input: {
+export async function createHealthLogEntry(input: {
   userId: string;
   kind: HealthLogKind;
   title: string;
@@ -39,53 +39,55 @@ export function createHealthLogEntry(input: {
   unit?: string | null;
   notes?: string | null;
   recordedAt: Date;
-}): DbHealthLogEntry {
-  const db = getDb();
+}): Promise<DbHealthLogEntry> {
   const id = randomUUID();
   const now = new Date().toISOString();
-  db.prepare(
+  await execute(
     `INSERT INTO health_log_entries (id, user_id, kind, title, value, unit, notes, recorded_at, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-  ).run(
-    id,
-    input.userId,
-    input.kind,
-    input.title.trim(),
-    input.value?.trim() || null,
-    input.unit?.trim() || null,
-    input.notes?.trim() || null,
-    input.recordedAt.toISOString(),
-    now,
-    now,
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+    [
+      id,
+      input.userId,
+      input.kind,
+      input.title.trim(),
+      input.value?.trim() || null,
+      input.unit?.trim() || null,
+      input.notes?.trim() || null,
+      input.recordedAt.toISOString(),
+      now,
+      now,
+    ],
   );
-  return mapRow(
-    db.prepare(`SELECT * FROM health_log_entries WHERE id = ?`).get(id) as Record<
-      string,
-      unknown
-    >,
+  const row = await queryOne<Record<string, unknown>>(
+    `SELECT * FROM health_log_entries WHERE id = $1`,
+    [id],
   );
+  if (!row) {
+    throw new Error("Failed to create health log entry.");
+  }
+  return mapRow(row);
 }
 
-export function findHealthLogEntryForUser(
+export async function findHealthLogEntryForUser(
   id: string,
   userId: string,
-): DbHealthLogEntry | null {
-  const db = getDb();
-  const row = db
-    .prepare(`SELECT * FROM health_log_entries WHERE id = ? AND user_id = ?`)
-    .get(id, userId) as Record<string, unknown> | undefined;
+): Promise<DbHealthLogEntry | null> {
+  const row = await queryOne<Record<string, unknown>>(
+    `SELECT * FROM health_log_entries WHERE id = $1 AND user_id = $2`,
+    [id, userId],
+  );
   return row ? mapRow(row) : null;
 }
 
-export function deleteHealthLogEntryForUser(
+export async function deleteHealthLogEntryForUser(
   id: string,
   userId: string,
-): boolean {
-  const db = getDb();
-  const result = db
-    .prepare(`DELETE FROM health_log_entries WHERE id = ? AND user_id = ?`)
-    .run(id, userId);
-  return result.changes > 0;
+): Promise<boolean> {
+  const changes = await execute(
+    `DELETE FROM health_log_entries WHERE id = $1 AND user_id = $2`,
+    [id, userId],
+  );
+  return changes > 0;
 }
 
 export function healthLogEntryToJson(e: DbHealthLogEntry) {

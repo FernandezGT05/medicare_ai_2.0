@@ -38,7 +38,7 @@ onboardingRouter.put("/", async (req, res) => {
     ? body.allergies.filter((a: unknown) => typeof a === "string")
     : undefined;
 
-  const updated = updateHealthProfile(user.id, {
+  const updated = await updateHealthProfile(user.id, {
     name: typeof body.name === "string" ? body.name : undefined,
     dateOfBirth:
       body.dateOfBirth === null || typeof body.dateOfBirth === "string"

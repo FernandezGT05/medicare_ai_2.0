@@ -1,10 +1,15 @@
-import { getConfig, reloadEnv } from "../config.js";
-import { closeDb, getDb } from "./db.js";
+import { reloadEnv } from "../config.js";
+import { closeDb } from "./db.js";
 import { runMigrations } from "./migrate.js";
 
 reloadEnv();
-console.log(`SQLite database: ${getConfig().sqlitePath}`);
-getDb();
-runMigrations();
-console.log("Migrations complete.");
-closeDb();
+
+try {
+  await runMigrations();
+  console.log("Postgres migrations applied.");
+} catch (error) {
+  console.error("Migration failed:", error);
+  process.exitCode = 1;
+} finally {
+  await closeDb();
+}

@@ -46,7 +46,7 @@ profileRouter.patch("/", async (req, res) => {
     return;
   }
 
-  let updated = updateUserProfile(user.id, {
+  let updated = await updateUserProfile(user.id, {
     name,
     pictureUrl: picture,
     phone,
@@ -65,7 +65,7 @@ profileRouter.patch("/", async (req, res) => {
   const locationUpdate = locationResult;
 
   if (Object.keys(locationUpdate).length > 0) {
-    const withLocation = updateHealthProfile(user.id, {
+    const withLocation = await updateHealthProfile(user.id, {
       ...locationUpdate,
       locationUsePrecise:
         typeof body.locationUsePrecise === "boolean"

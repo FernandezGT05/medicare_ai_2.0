@@ -1,51 +1,42 @@
 import { randomUUID } from "crypto";
-import { getDb } from "./db.js";
+import { query, queryOne } from "./db.js";
 import { mapUserRow } from "./rowMappers.js";
 import type { DbUser } from "./types.js";
 
-export function upsertUser(input: {
+type UserRow = Parameters<typeof mapUserRow>[0];
+
+export async function upsertUser(input: {
   googleSub: string;
   email: string;
   name: string;
   pictureUrl?: string | null;
-}): DbUser {
-  const db = getDb();
-  const existing = db
-    .prepare(`SELECT * FROM users WHERE google_sub = ?`)
-    .get(input.googleSub) as Parameters<typeof mapUserRow>[0] | undefined;
-
-  if (existing) {
-    db.prepare(
-      `UPDATE users SET email = ?, name = ?, picture_url = ?, updated_at = datetime('now')
-       WHERE google_sub = ?`,
-    ).run(input.email, input.name, input.pictureUrl ?? null, input.googleSub);
-    const updated = db
-      .prepare(`SELECT * FROM users WHERE google_sub = ?`)
-      .get(input.googleSub) as Parameters<typeof mapUserRow>[0];
-    return mapUserRow(updated);
-  }
-
+}): Promise<DbUser> {
   const id = randomUUID();
-  db.prepare(
+  const row = await queryOne<UserRow>(
     `INSERT INTO users (id, google_sub, email, name, picture_url)
-     VALUES (?, ?, ?, ?, ?)`,
-  ).run(id, input.googleSub, input.email, input.name, input.pictureUrl ?? null);
-
-  const row = db
-    .prepare(`SELECT * FROM users WHERE id = ?`)
-    .get(id) as Parameters<typeof mapUserRow>[0];
+     VALUES ($1, $2, $3, $4, $5)
+     ON CONFLICT (google_sub) DO UPDATE SET
+       email = EXCLUDED.email,
+       name = EXCLUDED.name,
+       picture_url = EXCLUDED.picture_url,
+       updated_at = NOW()
+     RETURNING *`,
+    [id, input.googleSub, input.email, input.name, input.pictureUrl ?? null],
+  );
+  if (!row) {
+    throw new Error("Failed to upsert user.");
+  }
   return mapUserRow(row);
 }
 
-export function findUserById(id: string): DbUser | null {
-  const db = getDb();
-  const row = db
-    .prepare(`SELECT * FROM users WHERE id = ?`)
-    .get(id) as Parameters<typeof mapUserRow>[0] | undefined;
+export async function findUserById(id: string): Promise<DbUser | null> {
+  const row = await queryOne<UserRow>(`SELECT * FROM users WHERE id = $1`, [
+    id,
+  ]);
   return row ? mapUserRow(row) : null;
 }
 
-export function updateUserProfile(
+export async function updateUserProfile(
   userId: string,
   input: {
     name?: string;
@@ -53,9 +44,8 @@ export function updateUserProfile(
     phone?: string | null;
     bio?: string | null;
   },
-): DbUser | null {
-  const db = getDb();
-  const existing = findUserById(userId);
+): Promise<DbUser | null> {
+  const existing = await findUserById(userId);
   if (!existing) return null;
 
   const name =
@@ -69,11 +59,12 @@ export function updateUserProfile(
   const bio =
     input.bio !== undefined ? input.bio?.trim() || null : existing.bio;
 
-  db.prepare(
+  await query(
     `UPDATE users
-     SET name = ?, picture_url = ?, phone = ?, bio = ?, updated_at = datetime('now')
-     WHERE id = ?`,
-  ).run(name, pictureUrl, phone, bio, userId);
+     SET name = $1, picture_url = $2, phone = $3, bio = $4, updated_at = NOW()
+     WHERE id = $5`,
+    [name, pictureUrl, phone, bio, userId],
+  );
 
   return findUserById(userId);
 }

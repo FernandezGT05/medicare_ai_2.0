@@ -50,7 +50,7 @@ consultationsRouter.post("/start", async (req, res) => {
     catalogAgentId,
     beyAgentId,
   });
-  abandonStaleInProgressForUser(user.id, consultation.id);
+  await abandonStaleInProgressForUser(user.id, consultation.id);
 
   res.status(201).json({ consultationId: consultation.id });
 });
@@ -58,7 +58,7 @@ consultationsRouter.post("/start", async (req, res) => {
 /** Finalize the user's most recent in-progress visit (e.g. left without End consultation). */
 consultationsRouter.post("/finalize-pending", async (req, res) => {
   const { user } = req as AuthenticatedRequest;
-  const consultation = findLatestInProgressForUser(user.id);
+  const consultation = await findLatestInProgressForUser(user.id);
   if (!consultation) {
     res.status(404).json({ error: "No visit waiting for a summary." });
     return;

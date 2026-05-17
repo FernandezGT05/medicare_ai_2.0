@@ -1,6 +1,6 @@
 import { randomUUID } from "crypto";
-import { getDb } from "./db.js";
-import { parseSqliteUtc } from "./datetime.js";
+import { execute, query, queryOne } from "./db.js";
+import { parseDbUtc } from "./datetime.js";
 import type { DbPlaceSuggestion } from "./types.js";
 
 type PlaceRow = {
@@ -17,7 +17,7 @@ type PlaceRow = {
   reason: string;
   distance_meters: number | null;
   maps_url: string | null;
-  created_at: string;
+  created_at: string | Date;
 };
 
 function mapPlaceRow(row: PlaceRow): DbPlaceSuggestion {
@@ -30,20 +30,19 @@ function mapPlaceRow(row: PlaceRow): DbPlaceSuggestion {
   return {
     ...row,
     types,
-    created_at: parseSqliteUtc(row.created_at),
+    created_at: parseDbUtc(row.created_at),
   };
 }
 
-export function deletePlaceSuggestionsForConsultation(
+export async function deletePlaceSuggestionsForConsultation(
   consultationId: string,
-): void {
-  const db = getDb();
-  db.prepare(`DELETE FROM place_suggestions WHERE consultation_id = ?`).run(
+): Promise<void> {
+  await execute(`DELETE FROM place_suggestions WHERE consultation_id = $1`, [
     consultationId,
-  );
+  ]);
 }
 
-export function insertPlaceSuggestions(
+export async function insertPlaceSuggestions(
   consultationId: string,
   userId: string,
   places: Array<{
@@ -58,68 +57,66 @@ export function insertPlaceSuggestions(
     distanceMeters?: number | null;
     mapsUrl?: string | null;
   }>,
-): DbPlaceSuggestion[] {
-  deletePlaceSuggestionsForConsultation(consultationId);
-  const db = getDb();
-  const insert = db.prepare(
-    `INSERT INTO place_suggestions
-       (id, consultation_id, user_id, google_place_id, name, address, lat, lng,
-        types, intent, reason, distance_meters, maps_url)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-  );
+): Promise<DbPlaceSuggestion[]> {
+  await deletePlaceSuggestionsForConsultation(consultationId);
 
   const results: DbPlaceSuggestion[] = [];
   for (const place of places) {
     const id = randomUUID();
-    insert.run(
-      id,
-      consultationId,
-      userId,
-      place.googlePlaceId,
-      place.name,
-      place.address,
-      place.lat,
-      place.lng,
-      JSON.stringify(place.types),
-      place.intent,
-      place.reason,
-      place.distanceMeters ?? null,
-      place.mapsUrl ?? null,
+    await execute(
+      `INSERT INTO place_suggestions
+         (id, consultation_id, user_id, google_place_id, name, address, lat, lng,
+          types, intent, reason, distance_meters, maps_url)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+      [
+        id,
+        consultationId,
+        userId,
+        place.googlePlaceId,
+        place.name,
+        place.address,
+        place.lat,
+        place.lng,
+        JSON.stringify(place.types),
+        place.intent,
+        place.reason,
+        place.distanceMeters ?? null,
+        place.mapsUrl ?? null,
+      ],
     );
-    const row = db
-      .prepare(`SELECT * FROM place_suggestions WHERE id = ?`)
-      .get(id) as PlaceRow;
-    results.push(mapPlaceRow(row));
+    const row = await queryOne<PlaceRow>(
+      `SELECT * FROM place_suggestions WHERE id = $1`,
+      [id],
+    );
+    if (row) {
+      results.push(mapPlaceRow(row));
+    }
   }
   return results;
 }
 
-export function listPlaceSuggestionsForConsultation(
+export async function listPlaceSuggestionsForConsultation(
   consultationId: string,
-): DbPlaceSuggestion[] {
-  const db = getDb();
-  const rows = db
-    .prepare(
-      `SELECT * FROM place_suggestions
-       WHERE consultation_id = ?
-       ORDER BY (distance_meters IS NULL), distance_meters ASC, created_at ASC`,
-    )
-    .all(consultationId) as PlaceRow[];
+): Promise<DbPlaceSuggestion[]> {
+  const rows = await query<PlaceRow>(
+    `SELECT * FROM place_suggestions
+     WHERE consultation_id = $1
+     ORDER BY (distance_meters IS NULL), distance_meters ASC, created_at ASC`,
+    [consultationId],
+  );
   return rows.map(mapPlaceRow);
 }
 
-export function listRecentPlaceSuggestionsForUser(
+export async function listRecentPlaceSuggestionsForUser(
   userId: string,
   limit = 12,
-): DbPlaceSuggestion[] {
-  const db = getDb();
-  const rows = db
-    .prepare(
-      `SELECT * FROM place_suggestions
-       WHERE user_id = ?
-       ORDER BY created_at DESC
-       LIMIT ?`,
-    )
-    .all(userId, limit) as PlaceRow[];
+): Promise<DbPlaceSuggestion[]> {
+  const rows = await query<PlaceRow>(
+    `SELECT * FROM place_suggestions
+     WHERE user_id = $1
+     ORDER BY created_at DESC
+     LIMIT $2`,
+    [userId, limit],
+  );
   return rows.map(mapPlaceRow);
 }

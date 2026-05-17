@@ -81,10 +81,10 @@ async function resolveBeyCall(
   let lastError: Error | null = null;
   for (let attempt = 0; attempt < FINALIZE_RETRY_ATTEMPTS; attempt++) {
     const calls = await listAllCalls(apiKey);
-    const usedCallIds = listLinkedBeyCallIds();
+    const usedCallIds = await listLinkedBeyCallIds();
     const match = findMatchingCall(calls, consultation, usedCallIds);
     if (match) {
-      attachBeyCallId(consultation.id, match.id);
+      await attachBeyCallId(consultation.id, match.id);
       return match;
     }
     lastError = new Error(
@@ -97,20 +97,20 @@ async function resolveBeyCall(
   throw lastError ?? new Error("Could not find Beyond Presence call.");
 }
 
-function syncVisitTimesFromCall(
+async function syncVisitTimesFromCall(
   consultationId: string,
   call: BeyCall,
-): void {
+): Promise<void> {
   if (!call.started_at) {
     return;
   }
-  setConsultationCallTimes(consultationId, call.started_at, call.ended_at);
+  await setConsultationCallTimes(consultationId, call.started_at, call.ended_at);
 }
 
 export async function finalizeConsultationById(
   consultationId: string,
 ): Promise<{ ok: boolean; alreadyDone?: boolean }> {
-  const consultation = findConsultationById(consultationId);
+  const consultation = await findConsultationById(consultationId);
   if (!consultation) {
     throw new Error("Consultation not found.");
   }
@@ -120,22 +120,22 @@ export async function finalizeConsultationById(
 export async function finalizeConsultation(
   consultation: DbConsultation,
 ): Promise<{ ok: boolean; alreadyDone?: boolean }> {
-  const existingSummary = getSummaryForConsultation(consultation.id);
+  const existingSummary = await getSummaryForConsultation(consultation.id);
   if (existingSummary) {
-    setConsultationStatus(consultation.id, "completed", new Date());
+    await setConsultationStatus(consultation.id, "completed", new Date());
     return { ok: true, alreadyDone: true };
   }
 
   const apiKey = assertApiKey();
   const beyCall = await resolveBeyCall(apiKey, consultation);
-  syncVisitTimesFromCall(consultation.id, beyCall);
+  await syncVisitTimesFromCall(consultation.id, beyCall);
 
-  const duplicate = findConsultationByBeyCallId(beyCall.id);
+  const duplicate = await findConsultationByBeyCallId(beyCall.id);
   if (duplicate && duplicate.id !== consultation.id) {
     throw new Error("This call is already linked to another visit.");
   }
 
-  setConsultationStatus(consultation.id, "summarizing");
+  await setConsultationStatus(consultation.id, "summarizing");
 
   try {
     const messages = await listAllCallMessages(apiKey, beyCall.id);
@@ -143,7 +143,7 @@ export async function finalizeConsultation(
       SPECIALTY_LABELS[consultation.specialty] ?? consultation.specialty;
     const summary = await summarizeTranscript(messages, specialtyLabel);
 
-    insertSummary({
+    await insertSummary({
       consultationId: consultation.id,
       summary: summary.summary,
       topics: summary.topics,
@@ -151,15 +151,15 @@ export async function finalizeConsultation(
       followUp: summary.follow_up,
     });
     const endedAt = beyCall.ended_at ? new Date(beyCall.ended_at) : new Date();
-    setConsultationStatus(consultation.id, "completed", endedAt);
+    await setConsultationStatus(consultation.id, "completed", endedAt);
     const { findUserById } = await import("../db/users.js");
-    const user = findUserById(consultation.user_id);
+    const user = await findUserById(consultation.user_id);
     if (user) {
       await suggestPlacesAfterFinalize(consultation, user);
     }
     return { ok: true };
   } catch (error) {
-    setConsultationStatus(consultation.id, "failed", new Date());
+    await setConsultationStatus(consultation.id, "failed", new Date());
     throw error;
   }
 }
@@ -167,9 +167,9 @@ export async function finalizeConsultation(
 export async function regenerateConsultationSummary(
   consultation: DbConsultation,
 ): Promise<{ ok: boolean }> {
-  deleteSummaryForConsultation(consultation.id);
-  setConsultationStatus(consultation.id, "in_progress");
-  const refreshed = findConsultationById(consultation.id);
+  await deleteSummaryForConsultation(consultation.id);
+  await setConsultationStatus(consultation.id, "in_progress");
+  const refreshed = await findConsultationById(consultation.id);
   if (!refreshed) {
     throw new Error("Consultation not found.");
   }
@@ -182,7 +182,7 @@ export async function processCallEndedWebhook(input: {
   messages: Array<{ sender: string; message: string; sent_at?: string }>;
   tags?: Record<string, string>;
 }): Promise<void> {
-  const existing = findConsultationByBeyCallId(input.callId);
+  const existing = await findConsultationByBeyCallId(input.callId);
   if (existing?.status === "completed") {
     return;
   }
@@ -192,14 +192,14 @@ export async function processCallEndedWebhook(input: {
     const consultationId =
       input.tags?.consultationId ?? input.tags?.consultation_id;
     if (consultationId) {
-      consultation = findConsultationById(consultationId);
+      consultation = await findConsultationById(consultationId);
     }
   }
   if (!consultation) {
     const { findLatestInProgressForAgent } = await import(
       "../db/consultations.js"
     );
-    consultation = findLatestInProgressForAgent(input.agentId);
+    consultation = await findLatestInProgressForAgent(input.agentId);
   }
   if (!consultation) {
     console.warn(
@@ -208,21 +208,21 @@ export async function processCallEndedWebhook(input: {
     return;
   }
 
-  attachBeyCallId(consultation.id, input.callId);
+  await attachBeyCallId(consultation.id, input.callId);
 
   try {
     const call = await retrieveCall(assertApiKey(), input.callId);
-    syncVisitTimesFromCall(consultation.id, call);
+    await syncVisitTimesFromCall(consultation.id, call);
   } catch {
     // Webhook path can still summarize from provided messages.
   }
 
-  if (getSummaryForConsultation(consultation.id) !== null) {
-    setConsultationStatus(consultation.id, "completed", new Date());
+  if ((await getSummaryForConsultation(consultation.id)) !== null) {
+    await setConsultationStatus(consultation.id, "completed", new Date());
     return;
   }
 
-  setConsultationStatus(consultation.id, "summarizing");
+  await setConsultationStatus(consultation.id, "summarizing");
 
   try {
     const specialtyLabel =
@@ -235,21 +235,21 @@ export async function processCallEndedWebhook(input: {
       })),
       specialtyLabel,
     );
-    insertSummary({
+    await insertSummary({
       consultationId: consultation.id,
       summary: summary.summary,
       topics: summary.topics,
       adviceGiven: summary.advice_given,
       followUp: summary.follow_up,
     });
-    setConsultationStatus(consultation.id, "completed", new Date());
+    await setConsultationStatus(consultation.id, "completed", new Date());
     const { findUserById } = await import("../db/users.js");
-    const webhookUser = findUserById(consultation.user_id);
+    const webhookUser = await findUserById(consultation.user_id);
     if (webhookUser) {
       await suggestPlacesAfterFinalize(consultation, webhookUser);
     }
   } catch (error) {
-    setConsultationStatus(consultation.id, "failed", new Date());
+    await setConsultationStatus(consultation.id, "failed", new Date());
     throw error;
   }
 }

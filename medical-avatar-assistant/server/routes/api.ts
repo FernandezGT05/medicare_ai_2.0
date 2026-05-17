@@ -30,6 +30,7 @@ apiRouter.get("/health", (_req, res) => {
   const config = getConfig();
   res.json({
     ok: true,
+    database: config.databaseUrl ? "postgres" : "not_configured",
     hasApiKey: Boolean(config.beyApiKey),
     locationServices: "nominatim",
     catalogAgents: getCatalogAgentHealth(),

@@ -15,7 +15,7 @@
   "functions": {
     "api/index.ts": {
       "maxDuration": 60,
-      "includeFiles": "server/db/migrations/**"
+      "includeFiles": "server/db/migrations/postgres/**"
     }
   }
 }

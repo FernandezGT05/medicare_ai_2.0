@@ -11,14 +11,14 @@ A full-stack web app for **video consultations with AI medical avatars** (Beyond
 - **Patient dashboard** — Overview, consultation history, follow-ups, profile, reminders, and health log (`/dashboard?tab=…`).
 - **Location-aware resources** — Profile/onboarding location (text or GPS); nearby pharmacies, clinics, and related places via **OpenStreetMap Nominatim** (no Google Maps billing).
 - **Google Sign-In** — JWT sessions; protected API routes.
-- **SQLite persistence** — Local `data/app.sqlite` in development; migrations run automatically on server start.
+- **PostgreSQL persistence** — Users, visits, summaries, reminders, and health log; migrations run automatically on server start.
 
 ## Tech stack
 
 | Layer | Stack |
 |--------|--------|
 | Frontend | React 19, Vite 6, React Router, CSS modules |
-| Backend | Express 5, Node.js 22+ (`node:sqlite`) |
+| Backend | Express 5, Node.js 22+, PostgreSQL (`pg`) |
 | Auth | Google OAuth, `jose` JWT |
 | Avatar / video | Beyond Presence API, LiveKit client |
 | Summaries | OpenAI API |
@@ -26,8 +26,9 @@ A full-stack web app for **video consultations with AI medical avatars** (Beyond
 
 ## Prerequisites
 
-- **Node.js 22+** (required for built-in SQLite)
+- **Node.js 22+**
 - **npm**
+- **PostgreSQL** — [Neon](https://neon.tech), [Vercel Postgres](https://vercel.com/storage/postgres), Supabase, or local Postgres
 - Accounts / keys:
   - [Google Cloud](https://console.cloud.google.com/) — OAuth 2.0 Web client
   - [Beyond Presence](https://bey.dev) — API key and agent IDs
@@ -72,9 +73,9 @@ Copy `.env.example` to `.env` and fill in the values.
 | `BEY_API_KEY` | Yes | Beyond Presence API key (server only) |
 | `OPENAI_API_KEY` | Yes | Visit summary generation |
 | `OPENAI_MODEL` | No | Default: `gpt-4o-mini` |
+| `DATABASE_URL` | Yes | Postgres connection string |
 | `CLIENT_ORIGIN` | Yes | Frontend URL for CORS (e.g. `http://localhost:5173`) |
 | `PORT` | No | API port; default `3001` |
-| `SQLITE_PATH` | No | DB file path; default `./data/app.sqlite` |
 | `BEY_AGENT_ID_*` | No | Override built-in catalog agent UUIDs |
 | `VITE_API_BASE_URL` | No | Set only if API is on a **different** host than the frontend |
 | `FRONTEND_URL` | No | Extra allowed CORS origin (e.g. production Vercel URL) |
@@ -100,10 +101,9 @@ medical-avatar-assistant/
 │   └── api/client.ts    # Typed API client
 ├── server/              # Express API
 │   ├── routes/          # auth, consultations, dashboard, places, reminders, …
-│   ├── db/              # SQLite + SQL migrations
+│   ├── db/              # PostgreSQL + SQL migrations
 │   ├── bey/             # Beyond Presence client
 │   └── services/        # summaries, places (Nominatim), finalize flow
-├── data/                # SQLite database (gitignored; created at runtime)
 ├── vercel.json          # Vercel build + SPA + /api rewrites
 └── .env.example
 ```
@@ -125,13 +125,14 @@ This repo is configured for a **monolith** deploy: static frontend + Express API
 
 1. Push to GitHub and [import the project on Vercel](https://vercel.com/new).
 2. Use the repo root (where `vercel.json` lives). Build command and output directory are already set.
-3. Add environment variables in **Project → Settings → Environment Variables** (same as `.env`, with production URLs):
+3. Create a **Postgres** database ([Vercel Postgres](https://vercel.com/storage/postgres) or [Neon](https://neon.tech)) and add `DATABASE_URL` to environment variables.
+4. Add the rest in **Project → Settings → Environment Variables** (same as `.env`, with production URLs):
    - `CLIENT_ORIGIN` = `https://your-app.vercel.app`
    - `FRONTEND_URL` = same (optional, for CORS)
    - All required keys from the table above
    - Leave `VITE_API_BASE_URL` **empty** so the browser calls `/api` on the same domain.
-4. Update Google OAuth origins to your Vercel URL.
-5. Deploy.
+5. Update Google OAuth origins to your Vercel URL.
+6. Deploy (migrations run automatically on first API request).
 
 CLI alternative:
 
@@ -139,13 +140,6 @@ CLI alternative:
 npx vercel
 npx vercel --prod
 ```
-
-### SQLite on Vercel (important)
-
-On Vercel serverless, the database defaults to `/tmp/medical-avatar.sqlite`. That storage is **ephemeral** — data may be lost on cold starts or redeploys. Use Vercel for demos and previews; for production persistence, either:
-
-- Host the API on **Render**, **Railway**, or **Fly** with a persistent volume and set `VITE_API_BASE_URL` to that API URL, or  
-- Migrate to a hosted database (e.g. Turso, Postgres).
 
 ### Split deploy (frontend on Vercel, API elsewhere)
 

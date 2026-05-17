@@ -15,16 +15,16 @@ export const healthLogRouter = Router();
 
 healthLogRouter.use(requireAuth);
 
-healthLogRouter.get("/", (req, res) => {
+healthLogRouter.get("/", async (req, res) => {
   const { user } = req as AuthenticatedRequest;
-  const entries = listHealthLogForUser(user.id).map(healthLogEntryToJson);
+  const entries = (await listHealthLogForUser(user.id)).map(healthLogEntryToJson);
   res.json({
     entries,
     profile: healthProfileToResponse(user),
   });
 });
 
-healthLogRouter.post("/", (req, res) => {
+healthLogRouter.post("/", async (req, res) => {
   const { user } = req as AuthenticatedRequest;
   const body = req.body ?? {};
   const kind = typeof body.kind === "string" ? body.kind.trim() : "";
@@ -65,7 +65,7 @@ healthLogRouter.post("/", (req, res) => {
     return;
   }
 
-  const created = createHealthLogEntry({
+  const created = await createHealthLogEntry({
     userId: user.id,
     kind: kind as HealthLogKind,
     title,
@@ -78,9 +78,9 @@ healthLogRouter.post("/", (req, res) => {
   res.status(201).json({ entry: healthLogEntryToJson(created) });
 });
 
-healthLogRouter.delete("/:id", (req, res) => {
+healthLogRouter.delete("/:id", async (req, res) => {
   const { user } = req as AuthenticatedRequest;
-  const deleted = deleteHealthLogEntryForUser(req.params.id, user.id);
+  const deleted = await deleteHealthLogEntryForUser(req.params.id, user.id);
   if (!deleted) {
     res.status(404).json({ error: "Entry not found." });
     return;

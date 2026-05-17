@@ -1,4 +1,4 @@
-import { getDb } from "./db.js";
+import { execute } from "./db.js";
 import { findUserById } from "./users.js";
 import type { DbUser } from "./types.js";
 
@@ -33,7 +33,6 @@ export function userHasLocation(user: DbUser): boolean {
   );
 }
 
-/** Text we can send to the geocoder when lat/lng are missing. */
 export function locationGeocodeQuery(user: DbUser): string | null {
   const parts = [
     user.location_label,
@@ -65,14 +64,13 @@ export function getLocationForPlaces(user: DbUser): {
   return null;
 }
 
-export function updateHealthProfile(
+export async function updateHealthProfile(
   userId: string,
   input: HealthProfileUpdate,
-): DbUser | null {
-  const existing = findUserById(userId);
+): Promise<DbUser | null> {
+  const existing = await findUserById(userId);
   if (!existing) return null;
 
-  const db = getDb();
   const name =
     input.name !== undefined ? input.name.trim() || existing.name : existing.name;
   const dateOfBirth =
@@ -116,51 +114,48 @@ export function updateHealthProfile(
   const locationUsePrecise =
     input.locationUsePrecise !== undefined
       ? input.locationUsePrecise
-        ? 1
-        : 0
-      : existing.location_use_precise
-        ? 1
-        : 0;
+      : existing.location_use_precise;
   const onboardingCompletedAt = input.completeOnboarding
     ? new Date().toISOString()
-    : existing.onboarding_completed_at?.toISOString() ?? null;
+    : (existing.onboarding_completed_at?.toISOString() ?? null);
 
-  db.prepare(
+  await execute(
     `UPDATE users SET
-       name = ?,
-       date_of_birth = ?,
-       weight_kg = ?,
-       height_cm = ?,
-       gender = ?,
-       allergies = ?,
-       location_lat = ?,
-       location_lng = ?,
-       location_city = ?,
-       location_region = ?,
-       location_country = ?,
-       location_postal = ?,
-       location_label = ?,
-       location_use_precise = ?,
-       onboarding_completed_at = COALESCE(?, onboarding_completed_at),
-       updated_at = datetime('now')
-     WHERE id = ?`,
-  ).run(
-    name,
-    dateOfBirth,
-    weightKg,
-    heightCm,
-    gender,
-    allergies,
-    locationLat,
-    locationLng,
-    locationCity,
-    locationRegion,
-    locationCountry,
-    locationPostal,
-    locationLabel,
-    locationUsePrecise,
-    onboardingCompletedAt,
-    userId,
+       name = $1,
+       date_of_birth = $2,
+       weight_kg = $3,
+       height_cm = $4,
+       gender = $5,
+       allergies = $6,
+       location_lat = $7,
+       location_lng = $8,
+       location_city = $9,
+       location_region = $10,
+       location_country = $11,
+       location_postal = $12,
+       location_label = $13,
+       location_use_precise = $14,
+       onboarding_completed_at = COALESCE($15::timestamptz, onboarding_completed_at),
+       updated_at = NOW()
+     WHERE id = $16`,
+    [
+      name,
+      dateOfBirth,
+      weightKg,
+      heightCm,
+      gender,
+      allergies,
+      locationLat,
+      locationLng,
+      locationCity,
+      locationRegion,
+      locationCountry,
+      locationPostal,
+      locationLabel,
+      locationUsePrecise,
+      onboardingCompletedAt,
+      userId,
+    ],
   );
 
   return findUserById(userId);

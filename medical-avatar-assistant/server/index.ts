@@ -14,7 +14,11 @@ const bootConfig = getConfig();
 function logCatalogAgentConfig(): void {
   const config = getConfig();
   console.log(`Loaded env from ${config.envPath}`);
-  console.log(`SQLite database: ${config.sqlitePath}`);
+  if (config.databaseUrl) {
+    console.log("Database: PostgreSQL (DATABASE_URL)");
+  } else {
+    console.warn("Warning: DATABASE_URL is not set.");
+  }
   if (!config.beyApiKey) {
     console.warn("Warning: BEY_API_KEY is not set. Add it to .env to connect.");
   }
@@ -34,7 +38,7 @@ function logCatalogAgentConfig(): void {
   }
 }
 
-initServer();
+await initServer();
 const app = createApp();
 
 if (fs.existsSync(envPath)) {
@@ -49,7 +53,7 @@ if (fs.existsSync(envPath)) {
 
 try {
   const port = bootConfig.port;
-  console.log("Database ready (SQLite).");
+  console.log("Database ready (PostgreSQL).");
   app.listen(port, () => {
     console.log(`API server listening on http://localhost:${port}`);
     logCatalogAgentConfig();
@@ -60,5 +64,5 @@ try {
 }
 
 process.on("SIGTERM", () => {
-  closeDb();
+  void closeDb();
 });

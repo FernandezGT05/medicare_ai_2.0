@@ -20,17 +20,17 @@ export function optional(name: string): string | undefined {
 
 export function getConfig() {
   reloadEnv();
-  const defaultSqlitePath = process.env.VERCEL
-    ? path.join("/tmp", "medical-avatar.sqlite")
-    : path.resolve(__dirname, "../data/app.sqlite");
-  const sqlitePath = optional("SQLITE_PATH") ?? defaultSqlitePath;
+  const databaseUrl =
+    optional("DATABASE_URL") ??
+    optional("POSTGRES_URL") ??
+    optional("POSTGRES_PRISMA_URL");
   return {
     port: Number(process.env.PORT ?? 3001),
     beyApiKey: optional("BEY_API_KEY"),
     beyApiBaseUrl: "https://api.bey.dev",
     embedBaseUrl: "https://bey.chat",
     clientOrigin: process.env.CLIENT_ORIGIN ?? "http://localhost:5173",
-    sqlitePath,
+    databaseUrl,
     googleClientId: optional("GOOGLE_CLIENT_ID") ?? optional("VITE_GOOGLE_CLIENT_ID"),
     jwtSecret: optional("JWT_SECRET"),
     openaiApiKey: optional("OPENAI_API_KEY"),

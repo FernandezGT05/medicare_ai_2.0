@@ -48,7 +48,7 @@ placesRouter.get("/consultation/:consultationId", async (req, res) => {
     res.status(404).json({ error: "Visit not found." });
     return;
   }
-  const places = listPlaceSuggestionsForConsultation(consultation.id);
+  const places = await listPlaceSuggestionsForConsultation(consultation.id);
   res.json({ places: places.map(placeToJson) });
 });
 

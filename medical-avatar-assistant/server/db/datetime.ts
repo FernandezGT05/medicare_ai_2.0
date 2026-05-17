@@ -1,5 +1,8 @@
-/** SQLite `datetime('now')` is UTC but has no offset suffix — parse as UTC. */
-export function parseSqliteUtc(value: string): Date {
+/** Parse UTC timestamps from the database (Postgres TIMESTAMPTZ or legacy text). */
+export function parseDbUtc(value: string | Date): Date {
+  if (value instanceof Date) {
+    return value;
+  }
   const trimmed = value.trim();
   if (!trimmed) {
     return new Date(Number.NaN);
@@ -11,6 +14,12 @@ export function parseSqliteUtc(value: string): Date {
   return new Date(`${isoLike}Z`);
 }
 
-export function toSqliteUtcIso(date: Date): string {
+export function toDbUtcIso(date: Date): string {
   return date.toISOString();
 }
+
+/** @deprecated Use parseDbUtc */
+export const parseSqliteUtc = parseDbUtc;
+
+/** @deprecated Use toDbUtcIso */
+export const toSqliteUtcIso = toDbUtcIso;
