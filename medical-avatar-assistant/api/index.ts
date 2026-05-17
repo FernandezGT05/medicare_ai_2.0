@@ -1,20 +1,31 @@
-import type { Express } from "express";
+import express, { type Express } from "express";
 import { createApp, initServer } from "../server/app.js";
 
-let appPromise: Promise<Express> | null = null;
-
-function getApp(): Promise<Express> {
-  if (!appPromise) {
-    appPromise = initServer().then(() => createApp());
-  }
-  return appPromise;
+function buildStartupErrorApp(message: string): Express {
+  const app = express();
+  app.use(express.json());
+  app.all("*", (_req, res) => {
+    res.status(503).json({
+      ok: false,
+      error: message,
+      hint:
+        "Set DATABASE_URL in Vercel to your Supabase Session pooler URI (aws-*.pooler.supabase.com:5432), then redeploy.",
+    });
+  });
+  return app;
 }
 
-export default async function handler(
-  req: Parameters<Express>[0],
-  res: Parameters<Express>[1],
-  next: Parameters<Express>[2],
-): Promise<void> {
-  const app = await getApp();
-  return app(req, res, next);
+let app: Express;
+
+try {
+  await initServer();
+  app = createApp();
+  console.log("[api] Database ready");
+} catch (error) {
+  const message =
+    error instanceof Error ? error.message : "Database initialization failed";
+  console.error("[api] Startup failed:", error);
+  app = buildStartupErrorApp(message);
 }
+
+export default app;

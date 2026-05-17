@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { signSessionToken } from "../auth/jwt.js";
-import { requireAuth, type AuthenticatedRequest } from "../auth/middleware.js";
+import { authUser, requireAuth } from "../auth/middleware.js";
 import { buildLocationUpdateFromBody } from "../services/places/resolveLocation.js";
 import { geocodeAddress } from "../services/places/googlePlaces.js";
 import {
@@ -8,14 +8,14 @@ import {
   healthProfileToResponse,
   updateHealthProfile,
 } from "../db/healthProfile.js";
-import { findUserById, userToProfileResponse } from "../db/users.js";
+import { userToProfileResponse } from "../db/users.js";
 
 export const onboardingRouter = Router();
 
 onboardingRouter.use(requireAuth);
 
 onboardingRouter.get("/", (req, res) => {
-  const { user } = req as AuthenticatedRequest;
+  const user = authUser(req);
   res.json({
     completed: hasCompletedOnboarding(user),
     health: healthProfileToResponse(user),
@@ -24,7 +24,7 @@ onboardingRouter.get("/", (req, res) => {
 });
 
 onboardingRouter.put("/", async (req, res) => {
-  const { user } = req as AuthenticatedRequest;
+  const user = authUser(req);
   const body = req.body ?? {};
 
   const locationResult = await buildLocationUpdateFromBody(user, body);

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { signSessionToken } from "../auth/jwt.js";
-import { requireAuth, type AuthenticatedRequest } from "../auth/middleware.js";
+import { authUser, requireAuth } from "../auth/middleware.js";
 import { healthProfileToResponse, updateHealthProfile } from "../db/healthProfile.js";
 import { updateUserProfile, userToProfileResponse } from "../db/users.js";
 import { buildLocationUpdateFromBody } from "../services/places/resolveLocation.js";
@@ -10,7 +10,7 @@ export const profileRouter = Router();
 profileRouter.use(requireAuth);
 
 profileRouter.get("/", (req, res) => {
-  const { user } = req as AuthenticatedRequest;
+  const user = authUser(req);
   res.json({
     profile: userToProfileResponse(user),
     health: healthProfileToResponse(user),
@@ -18,7 +18,7 @@ profileRouter.get("/", (req, res) => {
 });
 
 profileRouter.patch("/", async (req, res) => {
-  const { user } = req as AuthenticatedRequest;
+  const user = authUser(req);
   const body = req.body ?? {};
 
   const name = typeof body.name === "string" ? body.name : undefined;

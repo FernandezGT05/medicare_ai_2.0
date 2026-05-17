@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { requireAuth, type AuthenticatedRequest } from "../auth/middleware.js";
+import { authUser, requireAuth } from "../auth/middleware.js";
 import {
   deleteConsultationForUser,
   findConsultationForUser,
@@ -20,7 +20,7 @@ export const dashboardRouter = Router();
 dashboardRouter.use(requireAuth);
 
 dashboardRouter.get("/", async (req, res) => {
-  const { user } = req as AuthenticatedRequest;
+  const user = authUser(req);
   const items = await listHistoryForUser(user.id);
   res.json({
     stats: buildDashboardStats(items),
@@ -31,7 +31,7 @@ dashboardRouter.get("/", async (req, res) => {
 });
 
 dashboardRouter.get("/:consultationId", async (req, res) => {
-  const { user } = req as AuthenticatedRequest;
+  const user = authUser(req);
   const consultation = await findConsultationForUser(
     req.params.consultationId,
     user.id,
@@ -64,7 +64,7 @@ dashboardRouter.get("/:consultationId", async (req, res) => {
 });
 
 dashboardRouter.delete("/:consultationId", async (req, res) => {
-  const { user } = req as AuthenticatedRequest;
+  const user = authUser(req);
   const deleted = await deleteConsultationForUser(
     req.params.consultationId,
     user.id,

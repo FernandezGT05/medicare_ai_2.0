@@ -7,6 +7,11 @@ export interface AuthenticatedRequest extends Request {
   user: DbUser;
 }
 
+/** After `requireAuth`, read the authenticated user (Express 5–safe cast). */
+export function authUser(req: Request): DbUser {
+  return (req as unknown as AuthenticatedRequest).user;
+}
+
 function bearerToken(req: Request): string | null {
   const header = req.headers.authorization;
   if (!header?.startsWith("Bearer ")) {

@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { requireAuth, type AuthenticatedRequest } from "../auth/middleware.js";
+import { authUser, requireAuth } from "../auth/middleware.js";
 import {
   createReminder,
   deleteReminderForUser,
@@ -21,13 +21,13 @@ export const remindersRouter = Router();
 remindersRouter.use(requireAuth);
 
 remindersRouter.get("/", async (req, res) => {
-  const { user } = req as AuthenticatedRequest;
+  const user = authUser(req);
   const reminders = (await listRemindersForUser(user.id)).map(reminderToJson);
   res.json({ reminders });
 });
 
 remindersRouter.post("/", async (req, res) => {
-  const { user } = req as AuthenticatedRequest;
+  const user = authUser(req);
   const body = req.body ?? {};
   const kind = typeof body.kind === "string" ? body.kind.trim() : "";
   const title = typeof body.title === "string" ? body.title.trim() : "";
@@ -70,7 +70,7 @@ remindersRouter.post("/", async (req, res) => {
 });
 
 remindersRouter.patch("/:id", async (req, res) => {
-  const { user } = req as AuthenticatedRequest;
+  const user = authUser(req);
   const body = req.body ?? {};
 
   const input: Parameters<typeof updateReminder>[2] = {};
@@ -118,7 +118,7 @@ remindersRouter.patch("/:id", async (req, res) => {
 });
 
 remindersRouter.delete("/:id", async (req, res) => {
-  const { user } = req as AuthenticatedRequest;
+  const user = authUser(req);
   const deleted = await deleteReminderForUser(req.params.id, user.id);
   if (!deleted) {
     res.status(404).json({ error: "Reminder not found." });

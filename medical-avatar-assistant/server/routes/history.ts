@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { requireAuth, type AuthenticatedRequest } from "../auth/middleware.js";
+import { authUser, requireAuth } from "../auth/middleware.js";
 import {
   deleteConsultationForUser,
   findConsultationForUser,
@@ -18,7 +18,7 @@ export const historyRouter = Router();
 historyRouter.use(requireAuth);
 
 historyRouter.get("/", async (req, res) => {
-  const { user } = req as AuthenticatedRequest;
+  const user = authUser(req);
   const items = await listHistoryForUser(user.id);
   res.json({
     history: mapCompletedVisits(items),
@@ -27,7 +27,7 @@ historyRouter.get("/", async (req, res) => {
 });
 
 historyRouter.get("/:consultationId", async (req, res) => {
-  const { user } = req as AuthenticatedRequest;
+  const user = authUser(req);
   const consultation = await findConsultationForUser(
     req.params.consultationId,
     user.id,
@@ -60,7 +60,7 @@ historyRouter.get("/:consultationId", async (req, res) => {
 });
 
 historyRouter.delete("/:consultationId", async (req, res) => {
-  const { user } = req as AuthenticatedRequest;
+  const user = authUser(req);
   const deleted = await deleteConsultationForUser(
     req.params.consultationId,
     user.id,

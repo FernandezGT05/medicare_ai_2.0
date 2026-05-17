@@ -128,7 +128,11 @@ export async function listAllCallMessages(
       BeyCallMessage[] | Paginated<BeyCallMessage> | { data?: BeyCallMessage[]; has_more?: boolean; next_cursor?: string }
     >(`/v1/calls/${callId}/messages?${query}`, apiKey);
 
-    messages.push(...normalizeMessages(body));
+    messages.push(
+      ...normalizeMessages(
+        body as BeyCallMessage[] | Paginated<BeyCallMessage> | undefined,
+      ),
+    );
 
     const hasMore =
       !Array.isArray(body) &&

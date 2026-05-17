@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { requireAuth, type AuthenticatedRequest } from "../auth/middleware.js";
+import { authUser, requireAuth } from "../auth/middleware.js";
 import { healthProfileToResponse } from "../db/healthProfile.js";
 import {
   createHealthLogEntry,
@@ -16,7 +16,7 @@ export const healthLogRouter = Router();
 healthLogRouter.use(requireAuth);
 
 healthLogRouter.get("/", async (req, res) => {
-  const { user } = req as AuthenticatedRequest;
+  const user = authUser(req);
   const entries = (await listHealthLogForUser(user.id)).map(healthLogEntryToJson);
   res.json({
     entries,
@@ -25,7 +25,7 @@ healthLogRouter.get("/", async (req, res) => {
 });
 
 healthLogRouter.post("/", async (req, res) => {
-  const { user } = req as AuthenticatedRequest;
+  const user = authUser(req);
   const body = req.body ?? {};
   const kind = typeof body.kind === "string" ? body.kind.trim() : "";
   const title = typeof body.title === "string" ? body.title.trim() : "";
@@ -79,7 +79,7 @@ healthLogRouter.post("/", async (req, res) => {
 });
 
 healthLogRouter.delete("/:id", async (req, res) => {
-  const { user } = req as AuthenticatedRequest;
+  const user = authUser(req);
   const deleted = await deleteHealthLogEntryForUser(req.params.id, user.id);
   if (!deleted) {
     res.status(404).json({ error: "Entry not found." });

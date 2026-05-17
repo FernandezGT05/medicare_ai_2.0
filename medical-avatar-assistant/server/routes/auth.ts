@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { verifyGoogleCredential } from "../auth/google.js";
 import { signSessionToken, verifySessionToken } from "../auth/jwt.js";
-import { requireAuth, type AuthenticatedRequest } from "../auth/middleware.js";
+import { authUser, requireAuth } from "../auth/middleware.js";
 import { upsertUser, userToProfileResponse } from "../db/users.js";
 
 export const authRouter = Router();
@@ -41,7 +41,7 @@ authRouter.post("/google", async (req, res) => {
 });
 
 authRouter.get("/me", requireAuth, (req, res) => {
-  const { user } = req as AuthenticatedRequest;
+  const user = authUser(req);
   res.json({ user: userToProfileResponse(user) });
 });
 

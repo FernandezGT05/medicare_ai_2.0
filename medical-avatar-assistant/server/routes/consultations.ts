@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { requireAuth, type AuthenticatedRequest } from "../auth/middleware.js";
+import { authUser, requireAuth } from "../auth/middleware.js";
 import {
   abandonStaleInProgressForUser,
   createConsultation,
@@ -43,7 +43,7 @@ consultationsRouter.post("/start", async (req, res) => {
     return;
   }
 
-  const { user } = req as AuthenticatedRequest;
+  const user = authUser(req);
   const consultation = await createConsultation({
     userId: user.id,
     specialty,
@@ -57,7 +57,7 @@ consultationsRouter.post("/start", async (req, res) => {
 
 /** Finalize the user's most recent in-progress visit (e.g. left without End consultation). */
 consultationsRouter.post("/finalize-pending", async (req, res) => {
-  const { user } = req as AuthenticatedRequest;
+  const user = authUser(req);
   const consultation = await findLatestInProgressForUser(user.id);
   if (!consultation) {
     res.status(404).json({ error: "No visit waiting for a summary." });
@@ -81,7 +81,7 @@ consultationsRouter.post("/finalize-pending", async (req, res) => {
 consultationsRouter.post(
   "/:consultationId/regenerate-summary",
   async (req, res) => {
-    const { user } = req as AuthenticatedRequest;
+    const user = authUser(req);
     const consultation = await findConsultationForUser(
       req.params.consultationId,
       user.id,
@@ -103,7 +103,7 @@ consultationsRouter.post(
 );
 
 consultationsRouter.post("/:consultationId/finalize", async (req, res) => {
-  const { user } = req as AuthenticatedRequest;
+  const user = authUser(req);
   const consultation = await findConsultationForUser(
     req.params.consultationId,
     user.id,

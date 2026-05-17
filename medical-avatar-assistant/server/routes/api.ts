@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { requireAuth, type AuthenticatedRequest } from "../auth/middleware.js";
+import { authUser, requireAuth } from "../auth/middleware.js";
 import { assertApiKey, getConfig } from "../config.js";
 import {
   findConsultationForUser,
@@ -26,11 +26,30 @@ import {
 
 export const apiRouter = Router();
 
-apiRouter.get("/health", (_req, res) => {
+apiRouter.get("/health", async (_req, res) => {
   const config = getConfig();
+  let database: string = config.databaseUrl ? "postgres" : "not_configured";
+  if (config.databaseUrl) {
+    try {
+      const { query } = await import("../db/db.js");
+      await query("SELECT 1 AS ok");
+      database = "postgres_connected";
+    } catch (error) {
+      database = "postgres_error";
+      res.status(503).json({
+        ok: false,
+        database,
+        dbError: error instanceof Error ? error.message : String(error),
+        hasApiKey: Boolean(config.beyApiKey),
+        locationServices: "nominatim",
+        catalogAgents: getCatalogAgentHealth(),
+      });
+      return;
+    }
+  }
   res.json({
     ok: true,
-    database: config.databaseUrl ? "postgres" : "not_configured",
+    database,
     hasApiKey: Boolean(config.beyApiKey),
     locationServices: "nominatim",
     catalogAgents: getCatalogAgentHealth(),
@@ -139,7 +158,7 @@ apiRouter.get("/session", requireAuth, async (req, res) => {
     } | null = null;
 
     if (priorConsultationId) {
-      const { user } = req as AuthenticatedRequest;
+      const user = authUser(req);
       const prior = await findConsultationForUser(
         priorConsultationId,
         user.id,
@@ -171,7 +190,7 @@ apiRouter.get("/session", requireAuth, async (req, res) => {
       };
     }
 
-    const { user } = req as AuthenticatedRequest;
+    const user = authUser(req);
     const patientContextBlock = buildPatientContextBlock(user);
 
     const { agent, embedUrl, specialty, agentId } = await resolveSpecialtySession(

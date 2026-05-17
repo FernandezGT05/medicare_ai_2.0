@@ -89,7 +89,7 @@ export async function resolveUserCoordinates(
 
 /** Apply location from profile/onboarding save body. */
 export async function buildLocationUpdateFromBody(
-  user: DbUser,
+  _user: DbUser,
   body: Record<string, unknown>,
 ): Promise<Parameters<typeof updateHealthProfile>[1] | { error: string }> {
   const labelText =

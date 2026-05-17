@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { requireAuth, type AuthenticatedRequest } from "../auth/middleware.js";
+import { authUser, requireAuth } from "../auth/middleware.js";
 import { findConsultationForUser } from "../db/consultations.js";
 import { listPlaceSuggestionsForConsultation } from "../db/placeSuggestions.js";
 import type { DbPlaceSuggestion } from "../db/types.js";
@@ -39,7 +39,7 @@ placesRouter.get("/intents", (req, res) => {
 });
 
 placesRouter.get("/consultation/:consultationId", async (req, res) => {
-  const { user } = req as AuthenticatedRequest;
+  const user = authUser(req);
   const consultation = await findConsultationForUser(
     req.params.consultationId,
     user.id,
@@ -53,7 +53,7 @@ placesRouter.get("/consultation/:consultationId", async (req, res) => {
 });
 
 placesRouter.post("/suggest", async (req, res) => {
-  const { user } = req as AuthenticatedRequest;
+  const user = authUser(req);
   const body = req.body ?? {};
   const specialty =
     typeof body.specialty === "string" ? body.specialty.trim() : "";

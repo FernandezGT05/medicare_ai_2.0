@@ -5,7 +5,7 @@ import {
 } from "../../db/healthProfile.js";
 import { resolveUserCoordinates } from "./resolveLocation.js";
 import { insertPlaceSuggestions } from "../../db/placeSuggestions.js";
-import type { DbConsultation, DbUser } from "../../db/types.js";
+import type { DbConsultation, DbPlaceSuggestion, DbUser } from "../../db/types.js";
 import type { AgentSpecialtyId } from "../agentSpecialties.js";
 import { geocodeAddress, searchPlacesWithFallbacks } from "./googlePlaces.js";
 import {
@@ -60,7 +60,7 @@ function buildReason(intent: PlaceIntentOption, contextSnippet?: string): string
 export async function suggestPlacesForUser(
   input: SuggestPlacesInput,
 ): Promise<{
-  places: ReturnType<typeof insertPlaceSuggestions>;
+  places: DbPlaceSuggestion[];
   intent: PlaceIntentOption;
   blocked: boolean;
   message?: string;
