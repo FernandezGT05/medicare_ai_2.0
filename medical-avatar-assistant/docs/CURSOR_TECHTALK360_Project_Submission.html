@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>MediCare AI — Cursor × TechTalk360 Submission</title>
+  <style>
+    body { font-family: "Segoe UI", system-ui, sans-serif; font-size: 11pt; line-height: 1.55;
+           color: #1a1a1a; max-width: 7.5in; margin: 0 auto; padding: 0.4in 0.5in; }
+    h1 { font-size: 22pt; color: #0d47a1; border-bottom: 2px solid #0d47a1; padding-bottom: 0.2em; }
+    h2 { font-size: 14pt; color: #1565c0; margin-top: 1.4em; }
+    h2.section-start {
+      page-break-before: always;
+      break-before: page;
+      margin-top: 0;
+      padding-top: 0.15in;
+    }
+    h3 { font-size: 12pt; color: #1976d2; page-break-after: avoid; break-after: avoid-page; }
+    table { width: 100%; border-collapse: collapse; font-size: 10pt; margin: 1em 0; }
+    th, td { border: 1px solid #bbb; padding: 6px 8px; text-align: left; }
+    th { background: #e3f2fd; }
+    code { background: #f0f0f0; padding: 1px 4px; font-size: 9pt; }
+    pre { background: #f5f5f5; padding: 12px; font-size: 9pt; overflow-x: auto; white-space: pre-wrap; }
+    hr { border: none; border-top: 1px solid #ccc; margin: 2em 0; }
+    @media print { body { padding: 0; } }
+  </style>
+</head>
+<body>
+<h1>CURSOR × TECHTALK360 — Project Submission Document</h1>
+<p><strong>Team:</strong> Zenos<br />
+<strong>Project:</strong> MediCare AI<br />
+<strong>Track:</strong> Beyond Presence<br />
+<strong>Demo URL:</strong> https://medicareai20.vercel.app/<br />
+<strong>Repository:</strong> https://github.com/FernandezGT05/medicare_ai_2.0.git  </p>
+<hr />
+<h2 class="section-start">01 — Project Overview</h2>
+<h3>Project Name &amp; One-Line Pitch</h3>
+<p><strong>MediCare AI</strong> — A patient-facing virtual care companion that delivers live video consultations with AI medical avatars (Beyond Presence), automatically records each visit to a longitudinal dashboard, and continues the same session via text when voice is unavailable.</p>
+<h3>Summary</h3>
+<p>Many people need timely wellness guidance but face long waits, limited access to clinicians, and fragmented records across one-off telehealth chats. MediCare AI addresses this by pairing specialty-matched Beyond Presence avatars with a full patient dashboard: users sign in with Google, complete onboarding, consult via live video, and receive structured visit summaries without manual note-taking.</p>
+<p>The product is built for individuals managing ongoing health questions—fitness, injuries, mental wellbeing, and general symptom guidance—not as a replacement for emergency or licensed clinical care. Each consultation compounds in value: prior visit summaries and profile context are injected into the agent before the call, webhook events finalize sessions automatically, and history surfaces summaries, follow-ups, reminders, and location-aware resources.</p>
+<p>Beyond Presence is meaningfully integrated across three production touchpoints: just-in-time agent context (patient profile + prior visit), LiveKit-powered live consultation as the core interaction, and <code>call_ended</code> webhooks that write session records to PostgreSQL and the dashboard without user action.</p>
+<h3>Submission Details</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Track</strong></td>
+<td>Beyond Presence</td>
+</tr>
+<tr>
+<td><strong>Track integration</strong></td>
+<td>Confirmed — API used for agent configuration, LiveKit call creation, call/message retrieval, and webhook-driven finalization</td>
+</tr>
+<tr>
+<td><strong>Team name</strong></td>
+<td>Zenos</td>
+</tr>
+<tr>
+<td><strong>Demo URL</strong></td>
+<td>https://medicareai20.vercel.app/</td>
+</tr>
+<tr>
+<td><strong>Repository</strong></td>
+<td>https://github.com/FernandezGT05/medicare_ai_2.0.git</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 class="section-start">02 — Problem Statement</h2>
+<h3>The Problem</h3>
+<p>Patients and health-conscious individuals often need quick, conversational guidance for non-emergency wellness topics—nutrition, recovery from minor injuries, stress, or whether symptoms warrant a GP visit. They experience this problem at home, after work, or between appointments, when a human clinician is not immediately available.</p>
+<p>If left unsolved, people either delay care (worsening anxiety or adherence), rely on unreliable web search, or use generic chatbots that lack continuity, visual presence, and a trustworthy record of what was discussed.</p>
+<h3>Why It Matters</h3>
+<ul>
+<li><strong>Frequency:</strong> Wellness questions are recurring; the same user may return weekly or monthly for follow-up topics.</li>
+<li><strong>Severity:</strong> While not always acute, poor guidance or lost context can lead to missed follow-ups, repeated explanations, or inappropriate self-treatment.</li>
+<li><strong>Current workarounds:</strong> Static FAQ sites, generic LLM chats, or scheduled telehealth. These fall short because they lack embodied presence (video avatar), session persistence, and automatic visit documentation tied to the same identity.</li>
+</ul>
+<h3>Root Cause</h3>
+<p>The underlying cause is <strong>disconnected care episodes</strong>: each interaction starts from zero, with no shared visual consultation layer and no system that links prior advice, patient context, and post-visit records. Symptom-level fixes (a one-off chatbot) do not solve the longitudinal failure mode.</p>
+<hr />
+<h2 class="section-start">03 — Proposed Solution</h2>
+<h3>What the Product Does</h3>
+<p>MediCare AI is a full-stack web application. After Google sign-in and onboarding, the user selects a consultation specialty (e.g. fitness &amp; nutrition, mental health) and an avatar agent (Nelly, Yuruo, Alan, or Jerome). The server configures the chosen Beyond Presence agent with a specialty system prompt plus optional patient profile and prior-visit context, then the client starts a LiveKit room via the Beyond Presence Calls API.</p>
+<p>During the visit, the user sees the avatar on video and can speak (microphone) or type in the same LiveKit session. When the call ends, Beyond Presence sends a webhook; the backend fetches the transcript, generates a structured summary with OpenAI, stores it in PostgreSQL, and exposes it on the patient dashboard (history, follow-ups, reminders, health log, nearby places).</p>
+<p><strong>Core mechanism:</strong> Beyond Presence agents + LiveKit real-time media/text + server-orchestrated context injection and webhook finalization.</p>
+<h3>Key Features</h3>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>User need addressed</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Live avatar video consultation</strong></td>
+<td>Human-like, trustworthy interaction for wellness conversations</td>
+</tr>
+<tr>
+<td><strong>Specialty + agent selection</strong></td>
+<td>Match tone and topic (fitness, injuries, mental health, symptom guidance)</td>
+</tr>
+<tr>
+<td><strong>Just-in-time prior context</strong></td>
+<td>Continuity—“remember what we discussed last time” without re-explaining</td>
+</tr>
+<tr>
+<td><strong>In-session text chat (same session)</strong></td>
+<td>Continue when microphone is unavailable or user prefers typing</td>
+</tr>
+<tr>
+<td><strong>Automatic visit summaries</strong></td>
+<td>No manual note-taking; structured summary, topics, advice, follow-up</td>
+</tr>
+<tr>
+<td><strong>Patient dashboard</strong></td>
+<td>Longitudinal record, search, follow-ups, reminders, health log</td>
+</tr>
+<tr>
+<td><strong>Location-aware resources</strong></td>
+<td>Find nearby pharmacies/clinics via geocoded profile (Nominatim)</td>
+</tr>
+<tr>
+<td><strong>Google Sign-In + JWT sessions</strong></td>
+<td>Secure, familiar authentication</td>
+</tr>
+</tbody>
+</table>
+<h3>Scope</h3>
+<p><strong>In scope (this build):</strong></p>
+<ul>
+<li>Google OAuth, onboarding, profile, PostgreSQL persistence</li>
+<li>Four Beyond Presence catalog agents × four specialty prompts</li>
+<li>LiveKit consultation UI with mic mute and text chat</li>
+<li>Webhook + manual finalize paths for visit summaries</li>
+<li>Dashboard tabs: overview, history, follow-ups, profile, reminders, health</li>
+</ul>
+<p><strong>Deliberately out of scope (time constraints):</strong></p>
+<ul>
+<li>Licensed clinician handoff, EHR integration, HIPAA certification</li>
+<li>Real-time human escalation or prescription workflows</li>
+<li>Native mobile apps</li>
+<li>Multi-tenant clinic/admin portals</li>
+</ul>
+<hr />
+<h2 class="section-start">04 — Functional Requirements</h2>
+<h3>Must Have (demonstrable in live demo)</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>M1</td>
+<td>User can sign in with Google and receive a session JWT</td>
+</tr>
+<tr>
+<td>M2</td>
+<td>User can complete onboarding (profile, location, health basics)</td>
+</tr>
+<tr>
+<td>M3</td>
+<td>User can select specialty and avatar and start a Beyond Presence-backed consultation</td>
+</tr>
+<tr>
+<td>M4</td>
+<td>User sees live avatar video and hears agent audio via LiveKit</td>
+</tr>
+<tr>
+<td>M5</td>
+<td>User can send text messages in the same session when voice is unavailable</td>
+</tr>
+<tr>
+<td>M6</td>
+<td>Server injects patient profile and optional prior visit into agent system prompt before call</td>
+</tr>
+<tr>
+<td>M7</td>
+<td>On call end, system stores consultation summary (webhook or finalize retry)</td>
+</tr>
+<tr>
+<td>M8</td>
+<td>User can view visit history and download summary from dashboard</td>
+</tr>
+<tr>
+<td>M9</td>
+<td>API keys for Beyond Presence and OpenAI are server-only</td>
+</tr>
+</tbody>
+</table>
+<h3>Should Have</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>S1</td>
+<td>User can link a prior visit when starting a new consultation</td>
+</tr>
+<tr>
+<td>S2</td>
+<td>Dashboard shows follow-ups derived from summaries</td>
+</tr>
+<tr>
+<td>S3</td>
+<td>Reminders and health log CRUD on dashboard</td>
+</tr>
+<tr>
+<td>S4</td>
+<td>Nearby places suggestions after visit finalization (when location set)</td>
+</tr>
+<tr>
+<td>S5</td>
+<td>Health check endpoint reports DB and Beyond Presence configuration status</td>
+</tr>
+</tbody>
+</table>
+<h3>Could Have / Won't Have (This Build)</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>C1</td>
+<td>Webhook signature verification</td>
+<td>Considered — not fully implemented</td>
+</tr>
+<tr>
+<td>C2</td>
+<td>Role-based clinician vs patient</td>
+<td>Won't have</td>
+</tr>
+<tr>
+<td>C3</td>
+<td>Offline mode</td>
+<td>Won't have</td>
+</tr>
+<tr>
+<td>C4</td>
+<td>Multi-language avatars beyond agent config</td>
+<td>Could have — limited to agent language setting</td>
+</tr>
+<tr>
+<td>C5</td>
+<td>In-app emergency triage routing</td>
+<td>Won't have — disclaimers only</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 class="section-start">05 — Non-Functional Requirements</h2>
+<h3>Performance</h3>
+<ul>
+<li><strong>Session bootstrap:</strong> Agent context update + <code>/api/session</code> typically completes in a few seconds (depends on Beyond Presence API).</li>
+<li><strong>LiveKit connect:</strong> Call creation and room join target sub-10s on stable networks.</li>
+<li><strong>Summary generation:</strong> OpenAI <code>gpt-4o-mini</code> JSON summary after call end; webhook path may add ~5–15s before dashboard refresh.</li>
+<li><strong>Concurrent usage:</strong> Vercel serverless + Neon/Postgres; suitable for demo and moderate traffic; no dedicated load testing in this build.</li>
+</ul>
+<h3>Reliability &amp; Error Handling</h3>
+<ul>
+<li>API failures return JSON errors to the client; consultation UI shows connection/finalize errors.</li>
+<li>Finalize flow retries matching Beyond Presence calls (6 attempts, 2s delay) if webhook is delayed.</li>
+<li>Empty transcripts produce a placeholder summary rather than crashing.</li>
+<li>Webhook handler returns 200 even on processing errors to avoid infinite retries (logged server-side).</li>
+</ul>
+<h3>Usability</h3>
+<ul>
+<li>React SPA with CSS modules; DM Sans / Lora / Plus Jakarta Sans typography.</li>
+<li>Clear consultation status (connecting, live, ready).</li>
+<li>Dashboard tab navigation with search on history.</li>
+<li>Disclaimers: wellness guidance only, not emergency care.</li>
+<li>Accessibility: semantic sections, <code>aria-live</code> on chat log, labeled controls for mic and consultation.</li>
+</ul>
+<h3>Scalability</h3>
+<ul>
+<li><strong>Current:</strong> Monolith on Vercel (static <code>dist/</code> + Express serverless <code>api/index.ts</code>), PostgreSQL via connection pool.</li>
+<li><strong>To scale:</strong> Move long-running finalize/summarize to a queue worker; add webhook auth; CDN for assets; read replicas for history; rate limiting on public endpoints.</li>
+</ul>
+<hr />
+<h2 class="section-start">06 — Technical Architecture</h2>
+<h3>System Overview</h3>
+<pre><code>┌─────────────────────────────────────────────────────────────────┐
+│                        Browser (React 19 + Vite)                   │
+│  Home │ Sign-in │ Onboarding │ Consultation │ Dashboard           │
+│       LiveKit client ←── video/audio/text ──→ Beyond Presence    │
+└────────────────────────────┬────────────────────────────────────┘
+                             │ HTTPS /api/*
+                             ▼
+┌─────────────────────────────────────────────────────────────────┐
+│              Express 5 API (Vercel serverless / Node 22)         │
+│  auth │ session │ calls │ consultations │ webhooks │ dashboard   │
+└─────┬───────────┬────────────────┬──────────────┬───────────────┘
+      │           │                │              │
+      ▼           ▼                ▼              ▼
+ PostgreSQL   Beyond Presence   OpenAI API    Nominatim (OSM)
+              api.bey.dev        summaries     geocoding/places
+              LiveKit tokens
+</code></pre>
+<h3>Technology Stack</h3>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Technology</th>
+<th>Rationale</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Frontend</td>
+<td>React 19, Vite 6, React Router 7, CSS modules</td>
+<td>Fast dev, typed components, SPA routing</td>
+</tr>
+<tr>
+<td>Backend</td>
+<td>Express 5, TypeScript, <code>tsx</code></td>
+<td>Mature HTTP API, shared types with client</td>
+</tr>
+<tr>
+<td>Database</td>
+<td>PostgreSQL (<code>pg</code>), SQL migrations</td>
+<td>Relational model for users, visits, summaries</td>
+</tr>
+<tr>
+<td>Auth</td>
+<td>Google OAuth (<code>@react-oauth/google</code>), <code>jose</code> JWT</td>
+<td>Familiar sign-in, stateless API sessions</td>
+</tr>
+<tr>
+<td><strong>Track: Beyond Presence</strong></td>
+<td>REST <code>api.bey.dev</code>, embed <code>bey.chat</code>, Calls + Agents API</td>
+<td>Avatar agents, LiveKit session creation, webhooks</td>
+</tr>
+<tr>
+<td>Real-time</td>
+<td><code>livekit-client</code></td>
+<td>In-app video, transcription streams, text chat topic <code>lk.chat</code></td>
+</tr>
+<tr>
+<td>AI summaries</td>
+<td>OpenAI (<code>gpt-4o-mini</code> default)</td>
+<td>Structured JSON visit summaries from transcripts</td>
+</tr>
+<tr>
+<td>Places</td>
+<td>OpenStreetMap Nominatim (server-side)</td>
+<td>No Google Maps billing; geocode + nearby search</td>
+</tr>
+<tr>
+<td>Hosting</td>
+<td>Vercel (frontend + <code>/api</code> rewrite)</td>
+<td>Demo URL, serverless deploy, Postgres integration</td>
+</tr>
+</tbody>
+</table>
+<h3>Data Flow — Core consultation journey</h3>
+<ol>
+<li><strong>Sign-in:</strong> Client sends Google ID token → <code>/api/auth</code> verifies → JWT issued → stored client-side.</li>
+<li><strong>Start session:</strong> <code>GET /api/session?specialty=&amp;agentId=&amp;priorConsultationId=</code> (auth required).</li>
+<li><strong>Context build:</strong> Server loads user profile (<code>buildPatientContextBlock</code>) and optional prior summary (<code>buildPriorContextBlock</code>).</li>
+<li><strong>Beyond Presence:</strong> <code>updateAgent</code> sets <code>system_prompt</code> + <code>greeting</code>; returns agent metadata and embed URL.</li>
+<li><strong>Consultation record:</strong> <code>POST /api/consultations</code> creates DB row linked to <code>bey_agent_id</code>.</li>
+<li><strong>Live call:</strong> Client <code>POST /api/calls</code> with <code>agentId</code> → Beyond Presence returns <code>livekit_url</code>, <code>livekit_token</code> → LiveKit <code>Room.connect</code>.</li>
+<li><strong>During call:</strong> Mic audio + agent video; user text via <code>sendText</code> on <code>lk.chat</code>; transcriptions on <code>lk.transcription</code>.</li>
+<li><strong>Call end:</strong> Beyond Presence <code>POST /api/webhooks/bey</code> (<code>call_ended</code>) → match consultation → fetch messages → OpenAI summarize → <code>insertSummary</code> → optional place suggestions.</li>
+<li><strong>Dashboard:</strong> <code>GET /api/dashboard</code> aggregates history, follow-ups, reminders for the user.</li>
+</ol>
+<h3>AI Integration</h3>
+<table>
+<thead>
+<tr>
+<th>Provider</th>
+<th>Role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Beyond Presence</strong></td>
+<td>Conversational avatar (speech, video, agent reasoning per platform)</td>
+</tr>
+<tr>
+<td><strong>OpenAI</strong></td>
+<td>Post-visit summarization only — JSON schema: summary, topics, advice_given, follow_up</td>
+</tr>
+</tbody>
+</table>
+<p>Prompting: Specialty prompts (<code>specialtyPrompts.ts</code>) define agent behavior; patient and prior-visit blocks are appended server-side before each session. Summarization system prompt enforces transcript-only facts, no diagnosis/prescription language.</p>
+<h3>Known Technical Limitations</h3>
+<ul>
+<li>Webhook endpoint does not verify Bey webhook signatures in this build.</li>
+<li>Finalize can race if user ends call before Beyond Presence registers the call (mitigated by retries).</li>
+<li>Agent system prompt is overwritten per session (last write wins for shared agent IDs).</li>
+<li>Vercel serverless cold starts may add latency on first API request.</li>
+<li>Not a regulated medical device; summaries are informational.</li>
+</ul>
+<hr />
+<h2 class="section-start">07 — Security</h2>
+<h3>Authentication &amp; Authorisation</h3>
+<ul>
+<li><strong>Google Sign-In</strong> on the client; server verifies ID token with <code>google-auth-library</code>.</li>
+<li><strong>JWT sessions</strong> signed with <code>JWT_SECRET</code>; <code>Authorization: Bearer</code> on protected routes via <code>requireAuth</code> middleware.</li>
+<li><strong>User scoping:</strong> Consultations and dashboard data filtered by <code>user_id</code>; no role-based roles in v1.</li>
+</ul>
+<h3>Data Handling</h3>
+<ul>
+<li>User profile, consultations, summaries, reminders, and health log stored in PostgreSQL.</li>
+<li>Sensitive fields are self-reported wellness data, not clinical diagnoses.</li>
+<li>Passwords N/A (OAuth only). JWTs stored in browser storage (<code>authStorage</code>).</li>
+</ul>
+<h3>API &amp; Secret Management</h3>
+<ul>
+<li><code>BEY_API_KEY</code>, <code>OPENAI_API_KEY</code>, <code>JWT_SECRET</code>, <code>DATABASE_URL</code>, <code>GOOGLE_CLIENT_ID</code> — <strong>server environment only</strong> (<code>.env</code>, Vercel env vars).</li>
+<li>Client receives only <code>VITE_GOOGLE_CLIENT_ID</code> (public OAuth client ID).</li>
+<li><code>.env.example</code> documents required variables without secrets.</li>
+</ul>
+<h3>Input Validation</h3>
+<ul>
+<li>Zod schema for OpenAI summary output.</li>
+<li>Specialty and catalog agent IDs validated against allowlists.</li>
+<li>Express JSON body parsing; consultation IDs validated against owning user.</li>
+</ul>
+<h3>Known Vulnerabilities or Gaps</h3>
+<ul>
+<li>Webhook <code>/api/webhooks/bey</code> is unauthenticated (relies on obscurity + call/agent matching) — should add signature verification for production.</li>
+<li>No rate limiting on auth or webhook endpoints in this build.</li>
+<li>CORS restricted via <code>CLIENT_ORIGIN</code> / <code>FRONTEND_URL</code> but depends on correct production configuration.</li>
+</ul>
+<hr />
+<h2 class="section-start">08 — User Stories &amp; Use Cases</h2>
+<h3>Core User Stories</h3>
+<ol>
+<li>As a <strong>new patient</strong>, I want to sign in with Google, so that I can access my personal dashboard securely.</li>
+<li>As a <strong>user</strong>, I want to complete onboarding with location and health basics, so that my avatar has relevant context.</li>
+<li>As a <strong>user</strong>, I want to choose a specialty and avatar, so that the consultation matches my topic and preference.</li>
+<li>As a <strong>returning patient</strong>, I want to preload a prior visit into the next session, so that the avatar asks what has changed since last time.</li>
+<li>As a <strong>user</strong>, I want a live video consultation with an AI avatar, so that I get a more natural interaction than text-only chat.</li>
+<li>As a <strong>user with microphone issues</strong>, I want to type in the same session, so that the consultation can continue without voice.</li>
+<li>As a <strong>user</strong>, I want my visit automatically summarized after the call, so that I do not have to take notes.</li>
+<li>As a <strong>user</strong>, I want to browse consultation history and follow-ups, so that I can track guidance over time.</li>
+<li>As a <strong>user</strong>, I want reminders and a health log, so that I can manage ongoing wellness tasks.</li>
+<li>As a <strong>user</strong>, I want nearby pharmacy/clinic suggestions, so that I can act on location-relevant advice.</li>
+</ol>
+<h3>Primary Use Case Walkthrough</h3>
+<ol>
+<li>User opens https://medicareai20.vercel.app/ and signs in with Google.</li>
+<li>If first visit, completes onboarding (DOB, allergies, location).</li>
+<li>Navigates to Consultation, selects <strong>Mental health</strong> and avatar <strong>Nelly</strong>, optionally selects a prior visit.</li>
+<li>System calls <code>/api/session</code> → updates Beyond Presence agent with specialty + profile + prior context.</li>
+<li>User clicks <strong>Start consultation</strong> → DB consultation created → LiveKit room connects → avatar appears.</li>
+<li>User speaks or types symptoms/stressors; avatar responds via voice and video.</li>
+<li>User ends call; Beyond Presence fires <code>call_ended</code> webhook.</li>
+<li>Server summarizes transcript, saves to DB; user opens Dashboard → History sees new visit with summary and follow-up actions.</li>
+<li>User downloads <code>.txt</code> summary or sets a reminder from dashboard.</li>
+</ol>
+<h3>Edge Cases</h3>
+<ul>
+<li><strong>Prior visit without summary:</strong> Session API returns 400; user must pick another visit.</li>
+<li><strong>Webhook delayed:</strong> History UI suggests waiting ~10s; manual finalize retries call matching.</li>
+<li><strong>Mic disabled:</strong> User uses text chat; transcript still captured for summary.</li>
+<li><strong>No transcript content:</strong> Summary states no conversation captured.</li>
+<li><strong>Unauthenticated API:</strong> 401 with message to sign in again.</li>
+</ul>
+<hr />
+<h2 class="section-start">09 — Target Users &amp; Market</h2>
+<h3>Primary User</h3>
+<p>Health-conscious individuals and patients seeking <strong>non-emergency wellness guidance</strong>—fitness, minor injury recovery, emotional support, or symptom education—who value visual presence and a personal health timeline. Pain addressed: fragmented advice, no record of AI conversations, and poor experience when voice hardware fails.</p>
+<h3>Market Opportunity</h3>
+<p>Digital health and virtual assistant markets are large; initial segment is <strong>direct-to-consumer wellness</strong> and telehealth-adjacent guidance (not replacing licensed care). First target: English-speaking users comfortable with Google sign-in and video chat.</p>
+<h3>Competitive Landscape</h3>
+<table>
+<thead>
+<tr>
+<th>Alternative</th>
+<th>Weakness</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Generic ChatGPT / text bots</strong></td>
+<td>No video avatar, no automatic visit record or longitudinal dashboard</td>
+</tr>
+<tr>
+<td><strong>Traditional telehealth apps</strong></td>
+<td>Human scheduling cost; not instant; often no AI avatar continuity</td>
+</tr>
+<tr>
+<td><strong>Beyond Presence embed-only demos</strong></td>
+<td>Single-session embed without patient history, webhooks, or mic-fallback architecture</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 class="section-start">10 — Business Model</h2>
+<p><strong>Near-term (buildathon / MVP):</strong> Free demo for user acquisition and track validation.</p>
+<p><strong>Potential monetization paths:</strong></p>
+<ul>
+<li><strong>Freemium:</strong> Limited consultations/month; premium for unlimited visits and export.</li>
+<li><strong>B2B2C:</strong> White-label for clinics or employers as a triage/wellness front door (with compliance investment).</li>
+<li><strong>Subscription:</strong> Dashboard, reminders, and priority agent access.</li>
+</ul>
+<p>Revenue would require clear medical disclaimers, terms of service, and regional compliance review before clinical claims.</p>
+<hr />
+<h2 class="section-start">11 — Why This Project Leads the Track</h2>
+<p>Zenos is positioned to lead the <strong>Beyond Presence</strong> track because integration goes beyond a single embed demo:</p>
+<ol>
+<li>
+<p><strong>Three integrated touchpoints</strong> — Only submission using the API across: (a) just-in-time context to pre-load patient history before each call, (b) live video consultation as the core interaction via Calls API + LiveKit, and (c) webhook events that automatically write session records to the dashboard when a call ends.</p>
+</li>
+<li>
+<p><strong>Clinical failure mode solved</strong> — When a patient's microphone is unavailable, the consultation continues via <strong>text chat in the same Beyond Presence / LiveKit session</strong>, preserving avatar video and session continuity (deliberate session architecture).</p>
+</li>
+<li>
+<p><strong>Compounding longitudinal value</strong> — Patient history dashboard stores consultations with AI-generated summaries; each Beyond Presence call makes the next call more useful via <code>priorConsultationId</code> context injection.</p>
+</li>
+<li>
+<p><strong>Production deployment</strong> — Stable demo at https://medicareai20.vercel.app/ with full-stack Vercel + PostgreSQL deployment.</p>
+</li>
+</ol>
+<hr />
+<h2 class="section-start">12 — Team &amp; Roles</h2>
+<table>
+<thead>
+<tr>
+<th>Member</th>
+<th>Role</th>
+<th>Responsibilities</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Gayan Fernandez</strong> (Team Lead)</td>
+<td>Full stack</td>
+<td>Architecture, Beyond Presence API integration, webhooks, OpenAI summaries, PostgreSQL, Vercel deployment, backend routes</td>
+</tr>
+<tr>
+<td><strong>Indrachapa Jayasinghe</strong></td>
+<td>Frontend</td>
+<td>React UI, consultation experience, patient dashboard, styling, client API integration, UX polish</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 class="section-start">Appendix — Key API Routes</h2>
+<table>
+<thead>
+<tr>
+<th>Route</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>POST /api/auth/google</code></td>
+<td>Exchange Google token for JWT</td>
+</tr>
+<tr>
+<td><code>GET /api/session</code></td>
+<td>Configure agent + return session metadata</td>
+</tr>
+<tr>
+<td><code>POST /api/calls</code></td>
+<td>Create Beyond Presence LiveKit call</td>
+</tr>
+<tr>
+<td><code>POST /api/consultations</code></td>
+<td>Persist visit row</td>
+</tr>
+<tr>
+<td><code>POST /api/webhooks/bey</code></td>
+<td>Handle <code>call_ended</code> from Beyond Presence</td>
+</tr>
+<tr>
+<td><code>GET /api/dashboard</code></td>
+<td>Dashboard aggregates</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<p><em>Document generated for Cursor × TechTalk360 Buildathon submission — Team Zenos — MediCare AI.</em></p>
+</body>
+</html>

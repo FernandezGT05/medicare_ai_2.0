@@ -12,16 +12,18 @@ import styles from "../App.module.css";
 
 export function ConsultationPage() {
   const { isAuthenticated, isSigningOut, authReady } = useAuth();
-  const { resetConsultationSetup } = useSession();
+  const { resetConsultationSetup, consultationActive } = useSession();
   const location = useLocation();
   const [onboardingChecked, setOnboardingChecked] = useState(false);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
 
   useEffect(() => {
-    if (isAuthenticated) {
+    // Only clear agent/specialty setup when landing fresh — not when returning
+    // mid-visit (e.g. Dashboard → Consultation while a call is still active).
+    if (isAuthenticated && !consultationActive) {
       resetConsultationSetup();
     }
-  }, [isAuthenticated, location.pathname, resetConsultationSetup]);
+  }, [isAuthenticated, location.pathname, resetConsultationSetup, consultationActive]);
 
   useEffect(() => {
     if (!isAuthenticated) {
